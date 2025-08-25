@@ -152,7 +152,11 @@ const Dashboard: React.FC = () => {
 
       {/* Upload Dialog */}
       <Dialog open={showUploader} onOpenChange={setShowUploader}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" aria-describedby="upload-dialog-description">
+          <div className="sr-only">
+            <h2 id="upload-dialog-title">Upload Notes</h2>
+            <p id="upload-dialog-description">Upload your note images to generate AI-powered study materials</p>
+          </div>
           <NoteUploader onClose={() => setShowUploader(false)} />
         </DialogContent>
       </Dialog>
