@@ -18,7 +18,7 @@ const App = () => (
         <NoteProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter basename="/session-scholar">
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/notes/:noteId" element={<NoteViewer />} />
