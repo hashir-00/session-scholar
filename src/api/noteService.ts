@@ -14,6 +14,7 @@ export interface Note {
   extractedText?: string;
   summary?: string;
   quiz?: QuizQuestion[];
+  explanation?: string;
 }
 
 export interface QuizQuestion {
@@ -58,6 +59,7 @@ class NoteService {
               ...this.mockNotes[noteIndex],
               status: 'completed',
               extractedText: `This is extracted text from ${file.name}. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nKey concepts:\n- Important concept 1\n- Important concept 2\n- Important concept 3`,
+              explanation: `This document appears to be focused on foundational concepts that are essential for understanding the subject matter. The content demonstrates a systematic approach to learning, with clear progression from basic principles to more complex applications.\n\nKey Educational Insights:\n\n1. **Conceptual Framework**: The material follows a logical structure that builds understanding step by step, making it ideal for students who learn best through structured progression.\n\n2. **Practical Applications**: The notes contain real-world examples that help bridge the gap between theoretical knowledge and practical implementation.\n\n3. **Critical Thinking Elements**: Several sections encourage analytical thinking and problem-solving approaches that are valuable for developing deeper understanding.\n\n4. **Study Recommendations**: Based on the content, this material would benefit from active recall techniques and spaced repetition for optimal retention.\n\nThe overall complexity level suggests this is intermediate-level material that requires some foundational knowledge but is accessible to students with proper preparation.`
             };
           }
         }, Math.random() * 2000 + 3000); // 3-5 seconds

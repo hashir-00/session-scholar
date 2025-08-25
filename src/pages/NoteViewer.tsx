@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, CheckCircle } from 'lucide-react';
+import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, CheckCircle, MessageSquare } from 'lucide-react';
 import { useNotes } from '@/context/NoteContext';
 import { Note, QuizQuestion } from '@/api/noteService';
+import { TextReader } from '@/components/notes/TextReader';
 
 const NoteViewer: React.FC = () => {
   const { noteId } = useParams<{ noteId: string }>();
@@ -164,7 +165,7 @@ const NoteViewer: React.FC = () => {
           {/* Content Panel */}
           <div>
             <Tabs defaultValue="text" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="text" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Text
@@ -172,6 +173,10 @@ const NoteViewer: React.FC = () => {
                 <TabsTrigger value="summary" className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Summary
+                </TabsTrigger>
+                <TabsTrigger value="explanation" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Explanation
                 </TabsTrigger>
                 <TabsTrigger value="quiz" className="flex items-center gap-2">
                   <HelpCircle className="h-4 w-4" />
@@ -199,6 +204,16 @@ const NoteViewer: React.FC = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Enhanced Text Reader Component */}
+                {note.extractedText && (
+                  <div className="mt-6">
+                    <TextReader 
+                      text={note.extractedText} 
+                      title={`${note.filename} - AI Text Reader`}
+                    />
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="summary" className="mt-6">
@@ -244,6 +259,72 @@ const NoteViewer: React.FC = () => {
                         <BookOpen className="h-12 w-12 mx-auto mb-4" />
                         <p className="mb-4">No summary available yet</p>
                         <p className="text-sm">Click "Generate Summary" to create an AI-powered summary of your notes</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="explanation" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      AI Explanation & Learning Insights
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {note.explanation ? (
+                      <div className="prose prose-sm max-w-none">
+                        <div className="space-y-4">
+                          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0 mt-1">
+                                <Brain className="h-4 w-4 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900 mb-2">AI Learning Analysis</h4>
+                                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                                  {note.explanation}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid md:grid-cols-2 gap-4 mt-6">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                              <h5 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4" />
+                                Study Tips
+                              </h5>
+                              <ul className="text-sm text-green-700 space-y-1">
+                                <li>• Use active recall techniques</li>
+                                <li>• Create concept maps</li>
+                                <li>• Practice spaced repetition</li>
+                                <li>• Teach concepts to others</li>
+                              </ul>
+                            </div>
+                            
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                              <h5 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                                <Brain className="h-4 w-4" />
+                                Learning Approach
+                              </h5>
+                              <ul className="text-sm text-blue-700 space-y-1">
+                                <li>• Visual learners: Use diagrams</li>
+                                <li>• Kinesthetic: Practice exercises</li>
+                                <li>• Auditory: Discuss concepts</li>
+                                <li>• Reading/Writing: Take notes</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4" />
+                        <p className="mb-4">AI explanation will be available soon</p>
+                        <p className="text-sm">Our AI is analyzing your content to provide personalized learning insights</p>
                       </div>
                     )}
                   </CardContent>
