@@ -1,73 +1,235 @@
-# Welcome to your Lovable project
+# StudyAI - AI-Powered Study Assistant
 
-## Project info
+A modern web application that transforms handwritten notes into interactive study materials using AI. Upload images of your notes and get automated text extraction, summaries, and quiz questions.
 
-**URL**: https://lovable.dev/projects/7277b001-d830-40c7-873a-6410df8251ad
+## 🚀 Features
 
-## How can I edit this code?
+- **Note Upload**: Drag-and-drop multiple image files of your handwritten notes
+- **AI Processing**: Automatic text extraction from images using OCR
+- **Smart Summaries**: AI-generated concise summaries of your notes
+- **Interactive Quizzes**: Auto-generated multiple-choice questions with explanations
+- **Session-Based**: No login required - data persists in browser sessions
+- **Real-time Updates**: Live progress tracking during AI processing
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
 
-There are several ways of editing your application.
+## 🛠️ Technology Stack
 
-**Use Lovable**
+- **Frontend Framework**: React 18+ with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS with custom design system
+- **HTTP Client**: Axios
+- **Routing**: React Router DOM v6
+- **State Management**: React Context API
+- **UI Components**: Radix UI primitives with custom styling
+- **File Upload**: React Dropzone
+- **Icons**: Lucide React
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7277b001-d830-40c7-873a-6410df8251ad) and start prompting.
+## 📁 Project Structure
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+src/
+├── api/
+│   └── noteService.ts          # API service layer with mock implementation
+├── components/
+│   ├── notes/
+│   │   ├── NoteCard.tsx        # Individual note display component
+│   │   └── NoteUploader.tsx    # File upload interface
+│   └── ui/                     # Reusable UI components (shadcn/ui)
+├── context/
+│   ├── NoteContext.tsx         # Notes state management
+│   └── SessionContext.tsx     # Session management
+├── pages/
+│   ├── Dashboard.tsx           # Main notes library page
+│   ├── NoteViewer.tsx          # Individual note viewing page
+│   ├── Index.tsx               # Landing page
+│   └── NotFound.tsx            # 404 error page
+├── hooks/
+│   └── use-mobile.tsx          # Mobile detection hook
+├── lib/
+│   └── utils.ts                # Utility functions
+└── assets/                     # Static assets and images
 ```
 
-**Edit a file directly in GitHub**
+## 🏗️ Architecture
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Session Management
+- **Session ID Generation**: Unique session IDs created using UUID
+- **Persistence**: Session data stored in browser's localStorage
+- **No Authentication**: Publicly accessible, session-based approach
+- **Data Isolation**: Each session maintains separate note collections
 
-**Use GitHub Codespaces**
+### State Management
+- **SessionContext**: Manages session ID and persistence
+- **NoteContext**: Handles note operations, upload, and AI generation
+- **Local State**: Component-level state for UI interactions
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### API Design
+The application is designed to work with a RESTful backend API:
 
-## What technologies are used for this project?
+#### Notes Endpoints
+- `POST /api/notes/upload` - Upload note images
+- `GET /api/notes?sessionId={id}` - Fetch all session notes
+- `GET /api/notes/{noteId}?sessionId={id}` - Get specific note details
+- `DELETE /api/notes/{noteId}?sessionId={id}` - Delete a note
 
-This project is built with:
+#### AI Generation Endpoints
+- `POST /api/notes/{noteId}/generate/summary` - Generate note summary
+- `POST /api/notes/{noteId}/generate/quiz` - Generate quiz questions
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Data Models
 
-## How can I deploy this project?
+#### Note Interface
+```typescript
+interface Note {
+  id: string;
+  filename: string;
+  status: 'processing' | 'completed' | 'failed';
+  thumbnailUrl?: string;
+  originalImageUrl?: string;
+  extractedText?: string;
+  summary?: string;
+  quiz?: QuizQuestion[];
+}
+```
 
-Simply open [Lovable](https://lovable.dev/projects/7277b001-d830-40c7-873a-6410df8251ad) and click on Share -> Publish.
+#### Quiz Question Interface
+```typescript
+interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation?: string;
+}
+```
 
-## Can I connect a custom domain to my Lovable project?
+## 🎨 Design System
 
-Yes, you can!
+### Color Scheme
+- **Primary**: Blue-based color palette for brand consistency
+- **Semantic Tokens**: CSS custom properties for theming
+- **Dark/Light Mode**: Automatic theme switching support
+- **Gradients**: Beautiful gradient overlays for visual appeal
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Typography
+- **Font Family**: System font stack for optimal performance
+- **Responsive Sizing**: Fluid typography that scales with viewport
+- **Semantic Hierarchy**: Clear heading and text relationships
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Components
+- **shadcn/ui**: Production-ready component library
+- **Custom Variants**: Extended component variants for specific use cases
+- **Accessibility**: WCAG compliant interactive elements
+
+## 🚦 Getting Started
+
+### Prerequisites
+- Node.js 18+ and npm
+- Modern web browser with JavaScript enabled
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd studyai
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open in browser**
+   Navigate to `http://localhost:5173`
+
+### Build for Production
+
+```bash
+# Create production build
+npm run build
+
+# Preview production build locally
+npm run preview
+```
+
+## 🔧 Development Workflow
+
+### Mock Mode
+The application includes a comprehensive mock mode for development:
+- **File Upload Simulation**: Realistic upload progress and timing
+- **Processing States**: Simulated AI processing with random delays
+- **Data Generation**: Mock text extraction, summaries, and quizzes
+- **Persistence**: Mock data persists during development session
+
+### Real API Integration
+To connect to a real backend:
+1. Update `API_BASE_URL` in `src/api/noteService.ts`
+2. Set `MOCK_MODE = false`
+3. Ensure backend implements the documented API endpoints
+
+### Adding New Features
+
+1. **Create Components**: Add new components in appropriate directories
+2. **Update Context**: Extend context providers for new state
+3. **Add Routes**: Register new pages in `App.tsx`
+4. **Style with Design System**: Use semantic tokens from `index.css`
+
+## 📱 User Experience Flow
+
+1. **Landing**: User visits application
+2. **Session Creation**: Automatic session ID generation
+3. **Dashboard**: View uploaded notes or upload new ones
+4. **Upload**: Drag-and-drop note images
+5. **Processing**: Real-time status updates during AI processing
+6. **Viewing**: Interactive note viewer with tabs for content
+7. **AI Generation**: On-demand summary and quiz creation
+8. **Study**: Interactive quiz with answer explanations
+
+## 🔒 Privacy & Security
+
+- **No User Data**: No personal information collected or stored
+- **Session-Based**: Data tied to browser sessions only
+- **Local Storage**: Session IDs stored locally, not server-side
+- **File Handling**: Uploaded images processed securely
+- **No Tracking**: No analytics or user behavior tracking
+
+## 🚀 Deployment
+
+### Lovable Platform
+1. Click "Publish" in Lovable editor
+2. Application deploys to `yourapp.lovable.app`
+3. Optional custom domain connection available
+
+### Manual Deployment
+1. Build the project: `npm run build`
+2. Deploy `dist/` folder to your hosting provider
+3. Configure server for SPA routing (all routes → `index.html`)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Check the [Lovable Documentation](https://docs.lovable.dev/)
+- Join the [Lovable Discord Community](https://discord.com/channels/1119885301872070706/1280461670979993613)
+- Review the codebase and component documentation
+
+---
+
+**StudyAI** - Transform your handwritten notes into interactive study materials with the power of AI.
