@@ -167,12 +167,6 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
             {note.status === 'completed' && (
               <div className="space-y-2">
                 <div className="flex gap-1 flex-wrap">
-                  {note.extractedText && (
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                      <FileText className="h-3 w-3 mr-1" />
-                      Text
-                    </Badge>
-                  )}
                   {note.summary && (
                     <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
                       <BookOpen className="h-3 w-3 mr-1" />
@@ -230,12 +224,6 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
                 <div className="h-1.5 w-1.5 rounded-full bg-red-500"></div>
                 Original note image
               </li>
-              {note.extractedText && (
-                <li className="flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-red-500"></div>
-                  Extracted text content
-                </li>
-              )}
               {note.summary && (
                 <li className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-red-500"></div>

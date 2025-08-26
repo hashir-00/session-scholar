@@ -13,14 +13,13 @@ import { QuizComponents } from '@/components/quiz/QuizComponents';
 const NoteViewer: React.FC = () => {
   const { noteId } = useParams<{ noteId: string }>();
   const navigate = useNavigate();
-  const { fetchNote, generateSummary, generateQuiz } = useNotes();
+  const { fetchNote, generateQuiz } = useNotes();
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingContent, setGeneratingContent] = useState<{
-    summary: boolean;
     quiz: boolean;
-  }>({ summary: false, quiz: false });
-  const [activeTab, setActiveTab] = useState('text');
+  }>({ quiz: false });
+  const [activeTab, setActiveTab] = useState('summary');
   const [focusMode, setFocusMode] = useState(true);
 
   useEffect(() => {
@@ -40,7 +39,7 @@ const NoteViewer: React.FC = () => {
   useEffect(() => {
     if (!note || !noteId) return;
 
-    const shouldPoll = generatingContent.summary || generatingContent.quiz;
+    const shouldPoll = generatingContent.quiz;
     if (!shouldPoll) return;
 
     const interval = setInterval(async () => {
@@ -49,9 +48,6 @@ const NoteViewer: React.FC = () => {
         setNote(updatedNote);
         
         // Stop polling if content is ready
-        if (generatingContent.summary && updatedNote.summary) {
-          setGeneratingContent(prev => ({ ...prev, summary: false }));
-        }
         if (generatingContent.quiz && updatedNote.quiz) {
           setGeneratingContent(prev => ({ ...prev, quiz: false }));
         }
@@ -60,12 +56,6 @@ const NoteViewer: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [noteId, note, generatingContent, fetchNote]);
-
-  const handleGenerateSummary = async () => {
-    if (!noteId) return;
-    setGeneratingContent(prev => ({ ...prev, summary: true }));
-    await generateSummary(noteId);
-  };
 
   const handleGenerateQuiz = async () => {
     if (!noteId) return;
@@ -218,7 +208,7 @@ const NoteViewer: React.FC = () => {
           {/* Content Panel */}
           <div>
             <Tabs 
-              defaultValue="text" 
+              defaultValue="summary" 
               className="w-full"
               onValueChange={(value) => {
                 setActiveTab(value);
@@ -227,11 +217,7 @@ const NoteViewer: React.FC = () => {
                 }
               }}
             >
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="text" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Text
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="summary" className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Summary
@@ -246,85 +232,36 @@ const NoteViewer: React.FC = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="text" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Extracted Text</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {note.extractedText ? (
-                      <div className="prose prose-sm max-w-none">
-                        <pre className="whitespace-pre-wrap text-sm bg-secondary p-4 rounded-lg">
-                          {note.extractedText}
-                        </pre>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <FileText className="h-12 w-12 mx-auto mb-4" />
-                        <p>Text extraction is still in progress...</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Enhanced Text Reader Component */}
-                {note.extractedText && (
-                  <div className="mt-6">
-                    <TextReader 
-                      text={note.extractedText} 
-                      title={`${note.filename} - AI Text Reader`}
-                    />
-                  </div>
-                )}
-              </TabsContent>
-
               <TabsContent value="summary" className="mt-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      AI Summary
-                      {!note.summary && (
-                        <Button 
-                          onClick={handleGenerateSummary}
-                          disabled={generatingContent.summary}
-                          size="sm"
-                        >
-                          {generatingContent.summary ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Brain className="h-4 w-4 mr-2" />
-                              Generate Summary
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </CardTitle>
+                    <CardTitle>AI Summary</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {note.summary ? (
                       <div className="prose prose-sm max-w-none">
-                        <div className="text-sm leading-relaxed">
+                        <div className="text-sm leading-relaxed whitespace-pre-line">
                           {note.summary}
                         </div>
-                      </div>
-                    ) : generatingContent.summary ? (
-                      <div className="text-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                        <p className="text-muted-foreground">AI is generating your summary...</p>
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
                         <BookOpen className="h-12 w-12 mx-auto mb-4" />
-                        <p className="mb-4">No summary available yet</p>
-                        <p className="text-sm">Click "Generate Summary" to create an AI-powered summary of your notes</p>
+                        <p>AI summary is being generated...</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Enhanced Text Reader Component for Summary */}
+                {note.summary && (
+                  <div className="mt-6">
+                    <TextReader 
+                      text={note.summary} 
+                      title={`${note.filename} - AI Summary Reader`}
+                    />
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="explanation" className="mt-6">

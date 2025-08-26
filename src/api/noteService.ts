@@ -11,7 +11,6 @@ export interface Note {
   status: 'processing' | 'completed' | 'failed';
   thumbnailUrl?: string;
   originalImageUrl?: string;
-  extractedText?: string;
   summary?: string;
   quiz?: QuizQuestion[];
   explanation?: string;
@@ -129,29 +128,6 @@ class NoteService {
 
     await axios.delete(`${API_BASE_URL}/notes/${noteId}`, {
       params: { sessionId },
-    });
-  }
-
-  async generateSummary(noteId: string, sessionId: string): Promise<void> {
-    if (MOCK_MODE) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Simulate summary generation after 2-3 seconds
-      setTimeout(() => {
-        const noteIndex = this.mockNotes.findIndex(n => n.id === noteId);
-        if (noteIndex !== -1) {
-          this.mockNotes[noteIndex] = {
-            ...this.mockNotes[noteIndex],
-            summary: `Here's an AI-generated summary of your notes:\n\nThis document covers key concepts in the subject matter, including fundamental principles and practical applications. The main points discussed are:\n\n• Core theoretical concepts that form the foundation of understanding\n• Practical examples and real-world applications\n• Important relationships between different elements\n• Critical thinking approaches to problem-solving\n\nThe material emphasizes the importance of connecting theory with practice, and provides a comprehensive overview suitable for exam preparation and deeper study.`,
-          };
-        }
-      }, Math.random() * 1000 + 2000); // 2-3 seconds
-      
-      return;
-    }
-
-    await axios.post(`${API_BASE_URL}/notes/${noteId}/generate/summary`, {
-      sessionId,
     });
   }
 

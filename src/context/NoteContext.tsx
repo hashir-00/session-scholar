@@ -11,7 +11,6 @@ interface NoteContextType {
   fetchNotes: () => Promise<void>;
   fetchNote: (noteId: string) => Promise<Note | null>;
   deleteNote: (noteId: string) => Promise<void>;
-  generateSummary: (noteId: string) => Promise<void>;
   generateQuiz: (noteId: string) => Promise<void>;
 }
 
@@ -94,23 +93,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [sessionId, toast]);
 
-  const generateSummary = useCallback(async (noteId: string) => {
-    try {
-      await noteService.generateSummary(noteId, sessionId);
-      
-      toast({
-        title: "Summary generation started",
-        description: "AI is generating the summary. It will be ready shortly.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to start summary generation.",
-        variant: "destructive",
-      });
-    }
-  }, [sessionId, toast]);
-
   const generateQuiz = useCallback(async (noteId: string) => {
     try {
       await noteService.generateQuiz(noteId, sessionId);
@@ -136,7 +118,6 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fetchNotes,
       fetchNote,
       deleteNote,
-      generateSummary,
       generateQuiz,
     }}>
       {children}
