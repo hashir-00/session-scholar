@@ -317,7 +317,7 @@ export const TextReader: React.FC<TextReaderProps> = ({ text, title = "Extracted
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 shadow-lg shadow-amber-100/50 bg-gradient-to-br from-card to-amber-50/30">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -342,7 +342,7 @@ export const TextReader: React.FC<TextReaderProps> = ({ text, title = "Extracted
         
         <CardContent className="space-y-6">
           {/* Controls */}
-          <div className="flex flex-wrap items-center gap-4 p-4 bg-secondary/30 rounded-lg">
+          <div className="flex flex-wrap items-center gap-4 p-4 bg-amber-50/50 rounded-lg border border-amber-200/30">
             {/* Playback Controls */}
             <div className="flex items-center gap-2">
               {!isSupported ? (
@@ -406,7 +406,7 @@ export const TextReader: React.FC<TextReaderProps> = ({ text, title = "Extracted
           </div>
 
           {/* Advanced Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-secondary/20 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-amber-50/30 rounded-lg border border-amber-200/20">
             {/* Voice Selection */}
             {isSupported && voices.length > 0 && (
               <div className="space-y-2">
