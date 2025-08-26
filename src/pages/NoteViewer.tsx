@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, CheckCircle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, MessageSquare, CheckCircle, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { useNotes } from '@/context/NoteContext';
-import { Note, QuizQuestion } from '@/api/noteService';
+import { Note } from '@/api/noteService';
 import { TextReader } from '@/components/notes/TextReader';
+import { QuizComponents } from '@/components/quiz/QuizComponents';
 
 const NoteViewer: React.FC = () => {
   const { noteId } = useParams<{ noteId: string }>();
@@ -19,7 +20,8 @@ const NoteViewer: React.FC = () => {
     summary: boolean;
     quiz: boolean;
   }>({ summary: false, quiz: false });
-  const [quizAnswers, setQuizAnswers] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState('text');
+  const [focusMode, setFocusMode] = useState(true);
 
   useEffect(() => {
     const loadNote = async () => {
@@ -71,13 +73,6 @@ const NoteViewer: React.FC = () => {
     await generateQuiz(noteId);
   };
 
-  const toggleQuizAnswer = (questionId: string) => {
-    setQuizAnswers(prev => ({
-      ...prev,
-      [questionId]: !prev[questionId]
-    }));
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30 flex items-center justify-center">
@@ -108,26 +103,47 @@ const NoteViewer: React.FC = () => {
       {/* Header */}
       <header className="border-b bg-card/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/')}
-              className="p-2"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold truncate">{note.filename}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant={note.status === 'completed' ? 'default' : 'secondary'}>
-                  {note.status}
-                </Badge>
-                {note.summary && (
-                  <Badge variant="outline" className="text-xs">Summary Ready</Badge>
-                )}
-                {note.quiz && (
-                  <Badge variant="outline" className="text-xs">Quiz Ready</Badge>
-                )}
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/')}
+                className="p-2 mt-1"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              
+              <div className="flex flex-col gap-3">
+                {/* Clickable Logo */}
+                <button 
+                  onClick={() => navigate('/')}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-amber-700 via-orange-600 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-200/50">
+                    <Brain className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent">
+                      StudyAI
+                    </h2>
+                  </div>
+                </button>
+                
+                {/* Note Name */}
+                <div>
+                  <h1 className="text-xl font-semibold truncate">{note.filename}</h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant={note.status === 'completed' ? 'default' : 'secondary'}>
+                      {note.status}
+                    </Badge>
+                    {note.summary && (
+                      <Badge variant="outline" className="text-xs">Summary Ready</Badge>
+                    )}
+                    {note.quiz && (
+                      <Badge variant="outline" className="text-xs">Quiz Ready</Badge>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -140,19 +156,56 @@ const NoteViewer: React.FC = () => {
           {/* Image Panel */}
           <Card className="lg:sticky lg:top-8">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Original Note
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Original Note
+                </div>
+                {activeTab === 'quiz' && (
+                  <Button
+                    onClick={() => setFocusMode(!focusMode)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {focusMode ? (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        Show Image
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="h-4 w-4" />
+                        Focus Mode
+                      </>
+                    )}
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {note.originalImageUrl ? (
-                <div className="rounded-lg overflow-hidden bg-secondary">
+                <div className="relative rounded-lg overflow-hidden bg-secondary">
                   <img 
                     src={note.originalImageUrl} 
                     alt={note.filename}
-                    className="w-full h-auto max-h-96 object-contain"
+                    className={`w-full h-auto max-h-96 object-contain transition-all duration-500 ${
+                      activeTab === 'quiz' && focusMode ? 'blur-md' : 'blur-none'
+                    }`}
                   />
+                  {activeTab === 'quiz' && focusMode && (
+                    <div className="absolute inset-0 bg-amber-900/20 backdrop-blur-sm flex items-center justify-center">
+                      <div className="text-center p-6 bg-white/95 rounded-lg shadow-lg border border-amber-200 max-w-sm">
+                        <div className="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <HelpCircle className="h-6 w-6 text-amber-600" />
+                        </div>
+                        <h3 className="font-semibold text-amber-900 mb-2">Focus Mode Active</h3>
+                        <p className="text-sm text-amber-700">
+                          Image is blurred to help you focus on the quiz
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="h-64 bg-secondary rounded-lg flex items-center justify-center">
@@ -164,7 +217,16 @@ const NoteViewer: React.FC = () => {
 
           {/* Content Panel */}
           <div>
-            <Tabs defaultValue="text" className="w-full">
+            <Tabs 
+              defaultValue="text" 
+              className="w-full"
+              onValueChange={(value) => {
+                setActiveTab(value);
+                if (value === 'quiz') {
+                  setFocusMode(true);
+                }
+              }}
+            >
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="text" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
@@ -359,52 +421,11 @@ const NoteViewer: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     {note.quiz && note.quiz.length > 0 ? (
-                      <div className="space-y-6">
-                        {note.quiz.map((question: QuizQuestion, index: number) => (
-                          <div key={question.id} className="border rounded-lg p-4">
-                            <div className="mb-4">
-                              <h3 className="font-medium mb-3">
-                                {index + 1}. {question.question}
-                              </h3>
-                              <div className="space-y-2">
-                                {question.options.map((option, optionIndex) => (
-                                  <div 
-                                    key={optionIndex}
-                                    className={`p-3 rounded border cursor-pointer transition-colors ${
-                                      quizAnswers[question.id] 
-                                        ? (option === question.correctAnswer 
-                                            ? 'bg-success/10 border-success text-success' 
-                                            : 'bg-secondary border-border')
-                                        : 'bg-secondary border-border hover:bg-secondary/80'
-                                    }`}
-                                  >
-                                    {option}
-                                    {quizAnswers[question.id] && option === question.correctAnswer && (
-                                      <CheckCircle className="h-4 w-4 float-right text-success" />
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleQuizAnswer(question.id)}
-                            >
-                              {quizAnswers[question.id] ? 'Hide Answer' : 'Show Answer'}
-                            </Button>
-                            
-                            {quizAnswers[question.id] && question.explanation && (
-                              <div className="mt-3 p-3 bg-primary/5 rounded border">
-                                <p className="text-sm">
-                                  <strong>Explanation:</strong> {question.explanation}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <QuizComponents 
+                        questions={note.quiz}
+                        focusMode={focusMode}
+                        onToggleFocusMode={() => setFocusMode(!focusMode)}
+                      />
                     ) : generatingContent.quiz ? (
                       <div className="text-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
