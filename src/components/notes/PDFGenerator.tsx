@@ -1,4 +1,4 @@
-import { Note } from '@/api/noteService';
+import { Note, BackendQuizResponse, BackendMCQQuestion } from '@/api/noteService';
 
 interface PDFGeneratorProps {
   note: Note;
@@ -19,13 +19,6 @@ interface StructuredExplanation {
   learningApproaches?: string[];
   explanations?: Array<{concept: string; explanation: string}>;
   [key: string]: unknown;
-}
-
-interface QuizQuestion {
-  question: string;
-  options?: string[];
-  correctAnswer?: number | string;
-  explanation?: string;
 }
 
 export const generatePDFContent = ({ note }: PDFGeneratorProps): string => {
@@ -158,13 +151,13 @@ export const generatePDFContent = ({ note }: PDFGeneratorProps): string => {
   };
 
   // Format quiz content
-  const formatQuiz = (quiz: QuizQuestion[]): string => {
-    if (!quiz || !Array.isArray(quiz) || quiz.length === 0) {
+  const formatQuiz = (quiz: BackendQuizResponse): string => {
+    if (!quiz || !quiz.MCQ || !Array.isArray(quiz.MCQ) || quiz.MCQ.length === 0) {
       return '<div class="no-content">No quiz available</div>';
     }
 
     let formatted = '<div class="quiz-container">';
-    quiz.forEach((question, index) => {
+    quiz.MCQ.forEach((question: BackendMCQQuestion, index: number) => {
       formatted += `
         <div class="quiz-question">
           <div class="question-header">
@@ -173,15 +166,15 @@ export const generatePDFContent = ({ note }: PDFGeneratorProps): string => {
           </div>
       `;
       
-      if (question.options && Array.isArray(question.options)) {
+      if (question.answers && Array.isArray(question.answers)) {
         formatted += `<div class="quiz-options">`;
-        question.options.forEach((option: string, optIndex: number) => {
+        question.answers.forEach((answer, optIndex: number) => {
           const letter = String.fromCharCode(65 + optIndex); // A, B, C, D
-          const isCorrect = question.correctAnswer === optIndex || question.correctAnswer === option;
+          const isCorrect = answer.correct;
           formatted += `
             <div class="quiz-option ${isCorrect ? 'correct-option' : ''}">
               <span class="option-letter">${letter}</span>
-              <span class="option-text">${option}</span>
+              <span class="option-text">${answer.answer}</span>
               ${isCorrect ? '<span class="correct-indicator">✓</span>' : ''}
             </div>
           `;
@@ -515,7 +508,7 @@ export const generatePDFContent = ({ note }: PDFGeneratorProps): string => {
         </div>
       ` : ''}
       
-      ${note.quiz && note.quiz.length > 0 ? `
+      ${note.quiz && note.quiz.MCQ && note.quiz.MCQ.length > 0 ? `
         <div class="content-section">
           <div class="section-title">🧠 Study Quiz</div>
           <div class="summary-content">${formatQuiz(note.quiz)}</div>

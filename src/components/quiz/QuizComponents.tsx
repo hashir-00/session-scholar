@@ -3,13 +3,13 @@ import { HelpCircle, MessageSquare, Lightbulb, Eye, EyeOff } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { QuizQuestion } from '@/api/noteService';
+import { BackendQuizResponse } from '@/api/noteService';
 import { InteractiveQuiz } from './InteractiveQuiz';
 import { QAAccordion } from './QAAccordion';
 import { Flashcards } from './Flashcards';
 
 interface QuizComponentsProps {
-  questions: QuizQuestion[];
+  questions: BackendQuizResponse;
   focusMode: boolean;
   onToggleFocusMode: () => void;
 }
@@ -48,15 +48,15 @@ export const QuizComponents: React.FC<QuizComponentsProps> = ({ questions, focus
             </TabsList>
 
             <TabsContent value="interactive" className="mt-6">
-              <InteractiveQuiz questions={questions} />
+              <InteractiveQuiz questions={questions.MCQ} />
             </TabsContent>
 
             <TabsContent value="accordion" className="mt-6">
-              <QAAccordion questions={questions} />
+              <QAAccordion questions={questions.QuickQA} />
             </TabsContent>
 
             <TabsContent value="flashcards" className="mt-6">
-              <Flashcards questions={questions} />
+              <Flashcards questions={questions.Flashcards} />
             </TabsContent>
           </Tabs>
         </CardContent>
