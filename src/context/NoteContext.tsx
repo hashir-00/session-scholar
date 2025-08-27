@@ -8,6 +8,8 @@ import { config } from '@/config';
 interface NoteContextType {
   notes: Note[];
   isLoading: boolean;
+  isUploading: boolean;
+  uploadProgress: number;
   processingNotes: Array<{id: string, filename: string, status: string, thumbnailUrl?: string}>;
   uploadNotes: (files: File[]) => Promise<Array<{id: string, filename: string, status: string}>>;
   fetchNotes: () => Promise<void>;
@@ -22,6 +24,8 @@ const NoteContext = createContext<NoteContextType | undefined>(undefined);
 export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [processingNotes, setProcessingNotes] = useState<Array<{id: string, filename: string, status: string, thumbnailUrl?: string}>>([]);
   const { sessionId } = useSession();
   const { toast } = useToast();
@@ -55,6 +59,11 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProcessingNotes(prevProcessingNotes => {
           return prevProcessingNotes.map(processingNote => {
             const updatedNote = freshNotes.find(note => note.id === processingNote.id);
+            if (updatedNote && updatedNote.status === 'completed') {
+              // Note has completed processing, remove from processing notes
+              return null;
+            }
+            
             if (updatedNote) {
               return {
                 ...processingNote,
@@ -62,13 +71,8 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
             }
             
-            // Mock progression for development (replace with real status from fresh notes)
-            if (processingNote.status === 'processing' && Math.random() > 0.7) {
-              return { ...processingNote, status: 'completed' };
-            }
-            
             return processingNote;
-          });
+          }).filter(Boolean); // Remove null entries (completed notes)
         });
         
         // Also update the main notes state
@@ -86,26 +90,42 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (processingNotes.length === 0) return;
 
-    const allCompleted = processingNotes.every(note => note.status === 'completed');
-    const completedCount = processingNotes.filter(note => note.status === 'completed').length;
+    // Check if any notes have just completed (status changed to completed but still in processing notes)
+    const justCompletedNotes = processingNotes.filter(note => note.status === 'completed');
     
-    // Clean up when all processing is complete
-    if (allCompleted) {
+    if (justCompletedNotes.length > 0) {
+      // Show notification for completed notes
       setTimeout(() => {
         toast({
-          title: "All processing complete!",
-          description: `All ${processingNotes.length} note(s) have been successfully processed.`,
+          title: "Processing complete!",
+          description: `${justCompletedNotes.length} note(s) have been successfully processed.`,
         });
-        setProcessingNotes([]);
-      }, 1000);
+      }, 500);
     }
   }, [processingNotes, toast]);
 
   const uploadNotes = useCallback(async (files: File[]): Promise<Array<{id: string, filename: string, status: string}>> => {
     try {
       setIsLoading(true);
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) return prev;
+          return prev + 10;
+        });
+      }, 200);
+      
       const uploadResponse = await noteService.uploadNotes(files, sessionId);
       
+      // Complete upload progress
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      setIsUploading(false);
+      
+      // ONLY add to processing notes AFTER upload is complete
       // Add uploaded notes to processing queue for background monitoring with thumbnails
       const processingNotesWithThumbnails = uploadResponse.map((uploadedNote, index) => ({
         ...uploadedNote,
@@ -122,6 +142,8 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Return the uploaded notes info
       return uploadResponse;
     } catch (error) {
+      setIsUploading(false);
+      setUploadProgress(0);
       toast({
         title: "Upload failed",
         description: "Failed to upload notes. Please try again.",
@@ -206,6 +228,8 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <NoteContext.Provider value={{
       notes,
       isLoading,
+      isUploading,
+      uploadProgress,
       processingNotes,
       uploadNotes,
       fetchNotes,

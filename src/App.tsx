@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SessionProvider } from "@/context/SessionContext";
 import { NoteProvider } from "@/context/NoteContext";
+import Homepage from "./pages/Homepage";
 import Dashboard from "./pages/Dashboard";
 import NoteViewer from "./pages/NoteViewer";
 import NotFound from "./pages/NotFound";
@@ -20,7 +21,8 @@ const App = () => (
           <Sonner />
           <BrowserRouter basename="/session-scholar">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Homepage />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/notes/:noteId" element={<NoteViewer />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

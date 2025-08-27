@@ -122,7 +122,7 @@ const NoteViewer: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30 flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg mb-4">Note not found</p>
-          <Button onClick={() => navigate('/')}>
+          <Button onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
@@ -140,7 +140,7 @@ const NoteViewer: React.FC = () => {
             <div className="flex items-start gap-4">
               <Button 
                 variant="ghost" 
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/dashboard')}
                 className="p-2 mt-1"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -171,6 +171,9 @@ const NoteViewer: React.FC = () => {
                     </Badge>
                     {note.summary && (
                       <Badge variant="outline" className="text-xs">Summary Ready</Badge>
+                    )}
+                    {note.explanation && (
+                      <Badge variant="outline" className="text-xs">Explanation Ready</Badge>
                     )}
                     {note.quiz && (
                       <Badge variant="outline" className="text-xs">Quiz Ready</Badge>

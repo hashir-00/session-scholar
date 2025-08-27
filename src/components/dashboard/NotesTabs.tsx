@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, BookOpen, MessageSquare } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,6 +21,9 @@ export const NotesTabs: React.FC<NotesTabsProps> = ({
   completedNotes,
   onNoteClick
 }) => {
+  // Simple state for manual tab switching only
+  const [activeTab, setActiveTab] = useState<string>("processing");
+  
   return (
     <motion.div 
       className="space-y-8"
@@ -28,7 +31,7 @@ export const NotesTabs: React.FC<NotesTabsProps> = ({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <Tabs defaultValue="processing" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 bg-card/70 backdrop-blur-sm border shadow-lg h-12 border-amber-200/30">
           <TabsTrigger 
             value="processing" 
