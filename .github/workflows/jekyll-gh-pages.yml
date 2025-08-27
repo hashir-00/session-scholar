@@ -39,6 +39,18 @@ jobs:
         run: npm i
       - name: Build
         run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_MOCK_MODE: ${{ vars.VITE_MOCK_MODE }}
+          VITE_APP_TITLE: ${{ vars.VITE_APP_TITLE }}
+          VITE_APP_DESCRIPTION: ${{ vars.VITE_APP_DESCRIPTION }}
+          VITE_SESSION_KEY: ${{ vars.VITE_SESSION_KEY }}
+          VITE_MAX_FILE_SIZE: ${{ vars.VITE_MAX_FILE_SIZE }}
+          VITE_ALLOWED_FILE_TYPES: ${{ vars.VITE_ALLOWED_FILE_TYPES }}
+          VITE_PROCESSING_POLL_INTERVAL: ${{ vars.VITE_PROCESSING_POLL_INTERVAL }}
+          VITE_PROCESSING_TIMEOUT: ${{ vars.VITE_PROCESSING_TIMEOUT }}
+          VITE_DEFAULT_QUIZ_COUNT: ${{ vars.VITE_DEFAULT_QUIZ_COUNT }}
+          VITE_DEFAULT_QUIZ_TYPE: ${{ vars.VITE_DEFAULT_QUIZ_TYPE }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
