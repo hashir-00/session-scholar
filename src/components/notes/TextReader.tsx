@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Type, Eye, Copy, Download, TestTube } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Type, Eye, Copy, TestTube } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface TextReaderProps {
@@ -214,18 +214,6 @@ export const TextReader: React.FC<TextReaderProps> = ({ text, title = "Extracted
     }
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.replace(/\s+/g, '_').toLowerCase()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const toggleMute = () => {
     setIsMuted(!isMuted);
     if (speechRef.current) {
@@ -398,9 +386,6 @@ export const TextReader: React.FC<TextReaderProps> = ({ text, title = "Extracted
             <div className="flex items-center gap-2 ml-auto">
               <Button onClick={handleCopy} size="sm" variant="outline">
                 <Copy className="h-4 w-4" />
-              </Button>
-              <Button onClick={handleDownload} size="sm" variant="outline">
-                <Download className="h-4 w-4" />
               </Button>
             </div>
           </div>
