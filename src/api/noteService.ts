@@ -1,9 +1,11 @@
 import axios from 'axios';
+import { config } from '@/config';
+import { MockNoteService, mockTiming, simulateApiDelay, generateMockExplanation } from '@/mocks';
 
-const API_BASE_URL = 'http://localhost:3001/api'; // Update with your actual API URL
+const API_BASE_URL = config.api.baseUrl;
 
 // Mock data for development
-const MOCK_MODE = true;
+const MOCK_MODE = config.dev.mockMode;
 
 export interface Note {
   id: string;
@@ -13,7 +15,7 @@ export interface Note {
   originalImageUrl?: string;
   summary?: string;
   quiz?: QuizQuestion[];
-  explanation?: string;
+  explanation?: string | ConceptExplanationResponse;
 }
 
 export interface QuizQuestion {
@@ -30,41 +32,41 @@ export interface UploadResponse {
   status: string;
 }
 
+// Backend response interface
+interface BackendUploadResponse {
+  summary: string;
+  text_id: string;
+  explanation: string;
+}
+
+// Backend explanation response interface
+export interface ConceptExplanationResponse {
+  explanations: Array<{
+    concept: string;
+    explanation: string;
+  }>;
+  learningApproaches: string[];
+  studyTips: string[];
+}
+
 class NoteService {
-  private mockNotes: Note[] = [];
+  // Store notes for real API mode (separate from mock data)
+  private realNotes: Note[] = [];
 
   async uploadNotes(files: File[], sessionId: string): Promise<UploadResponse[]> {
     if (MOCK_MODE) {
       // Simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await simulateApiDelay(mockTiming.upload.delay);
       
       const uploadedNotes = files.map((file) => {
-        const noteId = `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const mockNote: Note = {
-          id: noteId,
-          filename: file.name,
-          status: 'processing',
-          thumbnailUrl: URL.createObjectURL(file),
-          originalImageUrl: URL.createObjectURL(file),
-        };
+        const mockNote = MockNoteService.createMockNote(file);
+        MockNoteService.addNote(mockNote);
         
-        this.mockNotes.push(mockNote);
-        
-        // Simulate processing completion after 3-5 seconds
-        setTimeout(() => {
-          const noteIndex = this.mockNotes.findIndex(n => n.id === noteId);
-          if (noteIndex !== -1) {
-            this.mockNotes[noteIndex] = {
-              ...this.mockNotes[noteIndex],
-              status: 'completed',
-              summary: `Here's an AI-generated summary of ${file.name}:\n\nThis document covers fundamental concepts essential for understanding the subject matter. The content demonstrates a systematic approach to learning with clear progression from basic principles to complex applications.\n\nKey Educational Points:\n\n• Core theoretical concepts that form the foundation of understanding\n• Practical examples bridging theory and real-world applications  \n• Critical thinking approaches for systematic problem-solving\n• Study techniques including active recall and spaced repetition\n\nThe material emphasizes connecting theoretical knowledge with practical implementation, making it ideal for comprehensive exam preparation and deeper conceptual understanding. The complexity level is intermediate, requiring foundational knowledge but remaining accessible with proper preparation.`,
-              explanation: `This document appears to be focused on foundational concepts that are essential for understanding the subject matter. The content demonstrates a systematic approach to learning, with clear progression from basic principles to more complex applications.\n\nKey Educational Insights:\n\n1. **Conceptual Framework**: The material follows a logical structure that builds understanding step by step, making it ideal for students who learn best through structured progression.\n\n2. **Practical Applications**: The notes contain real-world examples that help bridge the gap between theoretical knowledge and practical implementation.\n\n3. **Critical Thinking Elements**: Several sections encourage analytical thinking and problem-solving approaches that are valuable for developing deeper understanding.\n\n4. **Study Recommendations**: Based on the content, this material would benefit from active recall techniques and spaced repetition for optimal retention.\n\nThe overall complexity level suggests this is intermediate-level material that requires some foundational knowledge but is accessible to students with proper preparation.`
-            };
-          }
-        }, Math.random() * 2000 + 3000); // 3-5 seconds
+        // Simulate processing completion
+        MockNoteService.simulateProcessingCompletion(mockNote.id, file.name);
         
         return {
-          id: noteId,
+          id: mockNote.id,
           filename: file.name,
           status: 'processing'
         };
@@ -73,126 +75,205 @@ class NoteService {
       return uploadedNotes;
     }
 
-    const formData = new FormData();
+    // Send files one by one to match backend API
+    const uploadResponses: UploadResponse[] = [];
     
-    files.forEach((file) => {
-      formData.append('images', file);
-    });
-    formData.append('sessionId', sessionId);
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file); // Backend expects 'file' parameter
+      // Note: sessionId is not used by current backend but keeping for future compatibility
+      
+      try {
+        const response = await axios.post(`${API_BASE_URL}/api/process-image/`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
 
-    const response = await axios.post(`${API_BASE_URL}/notes/upload`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+        // Transform backend response to frontend format
+        const backendData: BackendUploadResponse = response.data;
+        const uploadResponse: UploadResponse = {
+          id: backendData.text_id, // Use text_id as the note ID
+          filename: file.name, // Use original filename from file object
+          status: 'processing' // Set as processing for UI consistency
+        };
 
-    return response.data;
+        uploadResponses.push(uploadResponse);
+
+        // Store the backend response to create note later
+        const note: Note = {
+          id: backendData.text_id,
+          filename: file.name,
+          status: 'completed', // Backend has already processed the summary
+          summary: backendData.summary,
+          explanation: backendData.explanation,
+          thumbnailUrl: URL.createObjectURL(file), // Create preview from file
+          originalImageUrl: URL.createObjectURL(file) // Create preview from file
+        };
+        this.realNotes.push(note);
+        
+      } catch (error) {
+        console.error(`Failed to upload ${file.name}:`, error);
+        // Continue with other files even if one fails
+      }
+    }
+
+    if (uploadResponses.length === 0) {
+      throw new Error('No files were successfully uploaded');
+    }
+
+    return uploadResponses;
   }
 
   async getNotes(sessionId: string): Promise<Note[]> {
     if (MOCK_MODE) {
       await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network delay
-      return [...this.mockNotes];
+      return MockNoteService.getAllNotes();
     }
 
-    const response = await axios.get(`${API_BASE_URL}/notes`, {
-      params: { sessionId },
-    });
-
-    return response.data;
+    // For real backend mode, return the notes stored in memory from uploads
+    // In a real implementation, this would fetch from the backend
+    return [...this.realNotes];
   }
 
   async getNote(noteId: string, sessionId: string): Promise<Note> {
     if (MOCK_MODE) {
       await new Promise(resolve => setTimeout(resolve, 200));
-      const note = this.mockNotes.find(n => n.id === noteId);
+      const note = MockNoteService.getNote(noteId);
       if (!note) {
         throw new Error('Note not found');
       }
       return { ...note };
     }
 
-    const response = await axios.get(`${API_BASE_URL}/notes/${noteId}`, {
-      params: { sessionId },
-    });
-
-    return response.data;
+    // For real backend mode, find the note in memory
+    const note = this.realNotes.find(n => n.id === noteId);
+    console.log('Real API: Getting note for noteId:', noteId);
+    console.log('Real API: Found note:', note ? 'yes' : 'no');
+    if (note) {
+      console.log('Real API: Note has explanation:', !!note.explanation);
+      if (note.explanation) {
+        const explanationLength = typeof note.explanation === 'string' 
+          ? note.explanation.length 
+          : JSON.stringify(note.explanation).length;
+        console.log('Real API: Explanation length:', explanationLength);
+      }
+    }
+    if (!note) {
+      throw new Error('Note not found');
+    }
+    return { ...note };
   }
 
   async deleteNote(noteId: string, sessionId: string): Promise<void> {
     if (MOCK_MODE) {
       await new Promise(resolve => setTimeout(resolve, 300));
-      this.mockNotes = this.mockNotes.filter(n => n.id !== noteId);
+      MockNoteService.removeNote(noteId);
       return;
     }
 
-    await axios.delete(`${API_BASE_URL}/notes/${noteId}`, {
-      params: { sessionId },
-    });
+    // For real backend mode, remove from memory
+    this.realNotes = this.realNotes.filter(n => n.id !== noteId);
   }
 
-  async generateQuiz(noteId: string, sessionId: string, type: string = 'mcq', count: number = 5): Promise<void> {
+  async generateQuiz(noteId: string, sessionId: string, type: string = config.quiz.defaultType, count: number = config.quiz.defaultCount): Promise<void> {
     if (MOCK_MODE) {
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Simulate quiz generation after 3-4 seconds
-      setTimeout(() => {
-        const noteIndex = this.mockNotes.findIndex(n => n.id === noteId);
-        if (noteIndex !== -1) {
-          const mockQuiz: QuizQuestion[] = [
-            {
-              id: 'q1',
-              question: 'What is the main concept discussed in these notes?',
-              options: [
-                'Fundamental theoretical principles',
-                'Advanced mathematical equations',
-                'Historical timeline events',
-                'Scientific methodology'
-              ],
-              correctAnswer: 'Fundamental theoretical principles',
-              explanation: 'The notes focus primarily on foundational concepts that support understanding of the subject matter.'
-            },
-            {
-              id: 'q2',
-              question: 'Which approach is emphasized for problem-solving?',
-              options: [
-                'Memorization techniques',
-                'Critical thinking approaches',
-                'Random trial methods',
-                'Computational algorithms'
-              ],
-              correctAnswer: 'Critical thinking approaches',
-              explanation: 'The notes highlight the importance of analytical thinking in approaching problems systematically.'
-            },
-            {
-              id: 'q3',
-              question: 'What connection is made in the material?',
-              options: [
-                'Theory and practice',
-                'Past and future',
-                'Simple and complex',
-                'Local and global'
-              ],
-              correctAnswer: 'Theory and practice',
-              explanation: 'The material emphasizes connecting theoretical knowledge with practical applications for better understanding.'
-            }
-          ];
-          
-          this.mockNotes[noteIndex] = {
-            ...this.mockNotes[noteIndex],
-            quiz: mockQuiz,
-          };
-        }
-      }, Math.random() * 1000 + 3000); // 3-4 seconds
+      // Use MockNoteService for quiz generation
+      MockNoteService.simulateQuizGeneration(noteId);
       
       return;
     }
 
-    await axios.post(`${API_BASE_URL}/notes/${noteId}/generate/quiz`, {
-      sessionId,
-      type,
-      count,
-    });
+    // Real backend mode - make API call and update local state
+    try {
+      const response = await axios.post(`${API_BASE_URL}/notes/${noteId}/generate/quiz`, {
+        sessionId,
+        type,
+        count,
+      });
+      
+      // Update the local note with the quiz from the response
+      if (response.data && response.data.quiz) {
+        const noteIndex = this.realNotes.findIndex(n => n.id === noteId);
+        if (noteIndex !== -1) {
+          this.realNotes[noteIndex] = {
+            ...this.realNotes[noteIndex],
+            quiz: response.data.quiz,
+          };
+          console.log('Real API: Note updated with quiz for noteId:', noteId);
+        } else {
+          console.log('Real API: Note not found for noteId:', noteId);
+        }
+      } else {
+        console.log('Real API: No quiz in response for noteId:', noteId);
+      }
+    } catch (error) {
+      console.error('Failed to generate quiz:', error);
+      throw error;
+    }
+  }
+
+  async generateExplanation(noteId: string, sessionId: string): Promise<string | ConceptExplanationResponse> {
+    if (MOCK_MODE) {
+      console.log('Starting explanation generation in mock mode for noteId:', noteId);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Use MockNoteService for background simulation
+      MockNoteService.simulateExplanationGeneration(noteId);
+      
+      // Return the mock explanation immediately for UI update
+      const mockExplanation = generateMockExplanation();
+      return mockExplanation;
+    }
+
+    // Real backend mode - make API call and return structured data directly
+    try {
+      console.log('Real API: Generating explanation for noteId:', noteId);
+      const response = await axios.post(`${API_BASE_URL}/api/generate-explanations/`, {
+        text_id: noteId,
+      });
+      
+      console.log('Real API: Response received:', response.data);
+      
+      if (response.data) {
+        const apiResponse = response.data as ConceptExplanationResponse;
+        
+        // Check if we have the expected structure
+        if (apiResponse.explanations || apiResponse.learningApproaches || apiResponse.studyTips) {
+          // Store the structured data in local storage
+          const noteIndex = this.realNotes.findIndex(n => n.id === noteId);
+          if (noteIndex !== -1) {
+            this.realNotes[noteIndex] = {
+              ...this.realNotes[noteIndex],
+              explanation: apiResponse,
+            };
+            console.log('Real API: Note updated with structured explanation for noteId:', noteId);
+          }
+          
+          return apiResponse;
+        }
+        // Fallback for other response formats - return as string
+        else if (typeof response.data === 'string') {
+          const noteIndex = this.realNotes.findIndex(n => n.id === noteId);
+          if (noteIndex !== -1) {
+            this.realNotes[noteIndex] = {
+              ...this.realNotes[noteIndex],
+              explanation: response.data,
+            };
+          }
+          return response.data;
+        }
+      }
+      
+      console.log('Real API: No valid explanation found in response for noteId:', noteId);
+      throw new Error('No explanation returned from API');
+    } catch (error) {
+      console.error('Failed to generate explanation:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      throw error;
+    }
   }
 }
 

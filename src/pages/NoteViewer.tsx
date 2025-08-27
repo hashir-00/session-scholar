@@ -8,17 +8,20 @@ import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, MessageSquar
 import { useNotes } from '@/context/NoteContext';
 import { Note } from '@/api/noteService';
 import { TextReader } from '@/components/notes/TextReader';
+import { ExplanationRenderer } from '@/components/notes/ExplanationRenderer';
 import { QuizComponents } from '@/components/quiz/QuizComponents';
+import { config } from '@/config';
 
 const NoteViewer: React.FC = () => {
   const { noteId } = useParams<{ noteId: string }>();
   const navigate = useNavigate();
-  const { fetchNote, generateQuiz } = useNotes();
+  const { fetchNote, generateQuiz, generateExplanation } = useNotes();
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingContent, setGeneratingContent] = useState<{
     quiz: boolean;
-  }>({ quiz: false });
+    explanation: boolean;
+  }>({ quiz: false, explanation: false });
   const [activeTab, setActiveTab] = useState('summary');
   const [focusMode, setFocusMode] = useState(true);
 
@@ -39,7 +42,7 @@ const NoteViewer: React.FC = () => {
   useEffect(() => {
     if (!note || !noteId) return;
 
-    const shouldPoll = generatingContent.quiz;
+    const shouldPoll = generatingContent.quiz || generatingContent.explanation;
     if (!shouldPoll) return;
 
     const interval = setInterval(async () => {
@@ -51,8 +54,11 @@ const NoteViewer: React.FC = () => {
         if (generatingContent.quiz && updatedNote.quiz) {
           setGeneratingContent(prev => ({ ...prev, quiz: false }));
         }
+        if (generatingContent.explanation && updatedNote.explanation) {
+          setGeneratingContent(prev => ({ ...prev, explanation: false }));
+        }
       }
-    }, 3000); // Poll every 3 seconds
+    }, config.processing.pollInterval); // Poll based on config
 
     return () => clearInterval(interval);
   }, [noteId, note, generatingContent, fetchNote]);
@@ -60,7 +66,44 @@ const NoteViewer: React.FC = () => {
   const handleGenerateQuiz = async () => {
     if (!noteId) return;
     setGeneratingContent(prev => ({ ...prev, quiz: true }));
-    await generateQuiz(noteId);
+    try {
+      await generateQuiz(noteId);
+      
+      // In real API mode, the quiz might be returned immediately
+      // So we should fetch the updated note right after the API call
+      const updatedNote = await fetchNote(noteId);
+      if (updatedNote && updatedNote.quiz) {
+        setNote(updatedNote);
+        setGeneratingContent(prev => ({ ...prev, quiz: false }));
+      }
+      // If no quiz found immediately, polling will continue via useEffect
+    } catch (error) {
+      console.error('Error generating quiz:', error);
+      setGeneratingContent(prev => ({ ...prev, quiz: false }));
+    }
+  };
+
+  const handleGenerateExplanation = async () => {
+    if (!noteId) return;
+    setGeneratingContent(prev => ({ ...prev, explanation: true }));
+    try {
+      console.log('NoteViewer: Starting explanation generation for noteId:', noteId);
+      const explanation = await generateExplanation(noteId);
+      console.log('NoteViewer: Received explanation:', explanation ? 'yes' : 'no');
+      
+      // Update the note immediately with the returned explanation (structured or string)
+      if (explanation && note) {
+        const updatedNote = { ...note, explanation };
+        setNote(updatedNote);
+        console.log('NoteViewer: Updated note with explanation');
+      }
+      
+      setGeneratingContent(prev => ({ ...prev, explanation: false }));
+    } catch (error) {
+      console.error('Error generating explanation:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setGeneratingContent(prev => ({ ...prev, explanation: false }));
+    }
   };
 
   if (loading) {
@@ -114,7 +157,7 @@ const NoteViewer: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent">
-                      StudyAI
+                      {config.app.title}
                     </h2>
                   </div>
                 </button>
@@ -267,63 +310,51 @@ const NoteViewer: React.FC = () => {
               <TabsContent value="explanation" className="mt-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5" />
-                      AI Explanation & Learning Insights
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" />
+                        AI Explanation & Learning Insights
+                      </div>
+                      {!note.explanation && !generatingContent.explanation && (
+                        <Button 
+                          onClick={handleGenerateExplanation}
+                          disabled={generatingContent.explanation}
+                          size="sm"
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                        >
+                          {generatingContent.explanation ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Generate Explanation
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {note.explanation ? (
-                      <div className="prose prose-sm max-w-none">
-                        <div className="space-y-4">
-                          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0 mt-1">
-                                <Brain className="h-4 w-4 text-white" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-gray-900 mb-2">AI Learning Analysis</h4>
-                                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                                  {note.explanation}
-                                </div>
-                              </div>
-                            </div>
+                    {generatingContent.explanation ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <div className="flex flex-col items-center">
+                          <div className="h-16 w-16 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 flex items-center justify-center mb-4 animate-pulse">
+                            <Brain className="h-8 w-8 text-purple-600" />
                           </div>
-                          
-                          <div className="grid md:grid-cols-2 gap-4 mt-6">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                              <h5 className="font-medium text-green-800 mb-2 flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4" />
-                                Study Tips
-                              </h5>
-                              <ul className="text-sm text-green-700 space-y-1">
-                                <li>• Use active recall techniques</li>
-                                <li>• Create concept maps</li>
-                                <li>• Practice spaced repetition</li>
-                                <li>• Teach concepts to others</li>
-                              </ul>
-                            </div>
-                            
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                              <h5 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
-                                <Brain className="h-4 w-4" />
-                                Learning Approach
-                              </h5>
-                              <ul className="text-sm text-blue-700 space-y-1">
-                                <li>• Visual learners: Use diagrams</li>
-                                <li>• Kinesthetic: Practice exercises</li>
-                                <li>• Auditory: Discuss concepts</li>
-                                <li>• Reading/Writing: Take notes</li>
-                              </ul>
-                            </div>
-                          </div>
+                          <p className="text-lg font-medium mb-2">AI is analyzing your content</p>
+                          <p className="text-sm">Generating detailed explanations and learning insights...</p>
                         </div>
                       </div>
+                    ) : note.explanation ? (
+                      <ExplanationRenderer explanation={note.explanation} />
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
                         <MessageSquare className="h-12 w-12 mx-auto mb-4" />
-                        <p className="mb-4">AI explanation will be available soon</p>
-                        <p className="text-sm">Our AI is analyzing your content to provide personalized learning insights</p>
+                        <p className="mb-4">Generate AI-powered explanations for your notes</p>
+                        <p className="text-sm">Get personalized learning insights, study tips, and detailed concept explanations</p>
                       </div>
                     )}
                   </CardContent>

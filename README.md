@@ -8,6 +8,8 @@ A modern web application that transforms handwritten notes into interactive stud
 - **AI Processing**: Automatic text extraction from images using OCR
 - **Smart Summaries**: AI-generated concise summaries of your notes
 - **Interactive Quizzes**: Auto-generated multiple-choice questions with explanations
+- **AI Explanations**: Detailed learning insights and concept explanations generated on-demand
+- **Study Recommendations**: Personalized study tips and learning approaches
 - **Session-Based**: No login required - data persists in browser sessions
 - **Real-time Updates**: Live progress tracking during AI processing
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
@@ -75,6 +77,7 @@ The application is designed to work with a RESTful backend API:
 #### AI Generation Endpoints
 - `POST /api/notes/{noteId}/generate/summary` - Generate note summary
 - `POST /api/notes/{noteId}/generate/quiz` - Generate quiz questions
+- `POST /api/generate-explanations/` - Generate detailed explanations and learning insights
 
 ### Data Models
 
@@ -89,6 +92,7 @@ interface Note {
   extractedText?: string;
   summary?: string;
   quiz?: QuizQuestion[];
+  explanation?: string;
 }
 ```
 
@@ -158,6 +162,24 @@ npm run build
 npm run preview
 ```
 
+### Environment Configuration
+
+This project uses environment variables for configuration. See `ENVIRONMENT.md` for detailed configuration options.
+
+```bash
+# Copy the environment template
+cp .env.example .env
+
+# Update .env with your configuration
+# Restart the development server after changes
+```
+
+Key environment variables:
+- `VITE_API_BASE_URL`: Backend API endpoint
+- `VITE_MOCK_MODE`: Enable/disable mock mode for development
+- `VITE_APP_TITLE`: Application title
+- `VITE_MAX_FILE_SIZE`: Maximum upload file size
+
 ## 🔧 Development Workflow
 
 ### Mock Mode
@@ -188,8 +210,9 @@ To connect to a real backend:
 4. **Upload**: Drag-and-drop note images
 5. **Processing**: Real-time status updates during AI processing
 6. **Viewing**: Interactive note viewer with tabs for content
-7. **AI Generation**: On-demand summary and quiz creation
-8. **Study**: Interactive quiz with answer explanations
+7. **AI Generation**: On-demand summary, quiz, and explanation creation
+8. **Learning**: Access detailed explanations, study tips, and learning approaches
+9. **Study**: Interactive quiz with answer explanations
 
 ## 🔒 Privacy & Security
 

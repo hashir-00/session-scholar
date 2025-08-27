@@ -5,9 +5,11 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import Stepper from '@/components/ui/stepper';
-import { Upload, FileImage, X, Brain, CheckCircle2, Sparkles, FileText, Wand2 } from 'lucide-react';
+import { Upload, FileImage, X, Brain, CheckCircle2, Sparkles, FileText, Wand2, AlertCircle } from 'lucide-react';
 import { useNotes } from '@/context/NoteContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
+import { config } from '@/config';
 
 interface NoteUploaderProps {
   onClose?: () => void;
@@ -17,7 +19,56 @@ export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const { uploadNotes, isLoading } = useNotes();
+  const [uploadedNoteIds, setUploadedNoteIds] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const { uploadNotes, isLoading, fetchNotes, processingNotes } = useNotes();
+  const { toast } = useToast();
+
+  // Validate file type
+  const validateFileType = useCallback((file: File): boolean => {
+    const allowedMimeTypes = config.upload.allowedFileTypes;
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    
+    // Check MIME type
+    if (!allowedMimeTypes.includes(file.type)) {
+      return false;
+    }
+    
+    // Check file extension matches MIME type
+    const allowedExtensions = config.upload.allowedTypesMap[file.type];
+    if (!allowedExtensions?.includes(fileExtension)) {
+      return false;
+    }
+    
+    return true;
+  }, []);
+
+  // Check if GIF is animated (basic check)
+  const isAnimatedGif = useCallback(async (file: File): Promise<boolean> => {
+    if (file.type !== 'image/gif') return false;
+    
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const arr = new Uint8Array(e.target?.result as ArrayBuffer);
+        // Basic check for multiple frames in GIF
+        // Look for multiple image descriptors (0x2C)
+        let imageDescriptorCount = 0;
+        for (let i = 0; i < arr.length - 1; i++) {
+          if (arr[i] === 0x2C) {
+            imageDescriptorCount++;
+            if (imageDescriptorCount > 1) {
+              resolve(true);
+              return;
+            }
+          }
+        }
+        resolve(false);
+      };
+      reader.onerror = () => resolve(false);
+      reader.readAsArrayBuffer(file);
+    });
+  }, []);
 
   const steps = [
     {
@@ -49,60 +100,182 @@ export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose }) => {
   useEffect(() => {
     if (selectedFiles.length > 0 && currentStep === 0) {
       setCurrentStep(1);
+    } else if (selectedFiles.length === 0 && currentStep === 1) {
+      setCurrentStep(0);
     }
   }, [selectedFiles.length, currentStep]);
 
+  // Monitor processing status for notes uploaded in this session
   useEffect(() => {
-    if (isLoading) {
-      setCurrentStep(2);
-      // Simulate upload progress
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            setCurrentStep(3);
-            return 100;
-          }
-          return prev + Math.random() * 15;
-        });
-      }, 500);
-      return () => clearInterval(interval);
-    }
-  }, [isLoading]);
+    if (uploadedNoteIds.length === 0) return;
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setSelectedFiles(prev => [...prev, ...acceptedFiles]);
-  }, []);
+    // Filter processing notes to only those uploaded in this session
+    const relevantProcessingNotes = processingNotes.filter(note => 
+      uploadedNoteIds.includes(note.id)
+    );
+
+    if (relevantProcessingNotes.length === 0) return;
+
+    const allCompleted = relevantProcessingNotes.every(note => note.status === 'completed');
+    const hasFailures = relevantProcessingNotes.some(note => note.status === 'failed');
+    const completedCount = relevantProcessingNotes.filter(note => note.status === 'completed').length;
+    
+    // Update progress
+    const progress = (completedCount / relevantProcessingNotes.length) * 100;
+    setUploadProgress(progress);
+
+    if (allCompleted) {
+      setCurrentStep(3); // Move to complete step
+      setUploadProgress(100);
+      
+      toast({
+        title: "Processing complete!",
+        description: `All ${relevantProcessingNotes.length} note(s) have been processed successfully.`,
+      });
+      
+      // Auto-close after showing success for a shorter time, or allow manual close
+      setTimeout(() => {
+        setSelectedFiles([]);
+        setUploadedNoteIds([]);
+        setCurrentStep(0);
+        setUploadProgress(0);
+        setIsUploading(false);
+      }, 2000);
+      
+      return;
+    }
+
+    if (hasFailures) {
+      toast({
+        title: "Processing failed",
+        description: "Some notes failed to process. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+  }, [processingNotes, uploadedNoteIds, toast]);
+
+  const onDrop = useCallback(async (acceptedFiles: File[], rejectedFiles: Array<{file: File, errors: Array<{code: string, message: string}>}>) => {
+    // Handle rejected files
+    if (rejectedFiles.length > 0) {
+      const rejectedNames = rejectedFiles.map(f => f.file.name).join(', ');
+      toast({
+        title: "Invalid file types",
+        description: `The following files were rejected: ${rejectedNames}. Only PNG, JPEG, WEBP, and non-animated GIF files are allowed.`,
+        variant: "destructive",
+      });
+    }
+
+    // Validate accepted files
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    for (const file of acceptedFiles) {
+      // Check basic file type validation
+      if (!validateFileType(file)) {
+        invalidFiles.push(file.name);
+        continue;
+      }
+
+      // Special check for GIF files to ensure they're not animated
+      if (file.type === 'image/gif') {
+        const isAnimated = await isAnimatedGif(file);
+        if (isAnimated) {
+          invalidFiles.push(`${file.name} (animated GIF not allowed)`);
+          continue;
+        }
+      }
+
+      validFiles.push(file);
+    }
+
+    // Show error for invalid files
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Invalid files detected",
+        description: `The following files were rejected: ${invalidFiles.join(', ')}. Only PNG, JPEG, WEBP, and non-animated GIF files are allowed.`,
+        variant: "destructive",
+      });
+    }
+
+    // Add valid files
+    if (validFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...validFiles]);
+      toast({
+        title: "Files added successfully",
+        description: `${validFiles.length} file(s) ready for upload.`,
+      });
+    }
+  }, [toast, validateFileType, isAnimatedGif]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
-    },
+    accept: config.upload.allowedTypesMap,
     multiple: true,
+    maxSize: config.upload.maxFileSize,
   });
 
   const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setSelectedFiles(prev => {
+      const newFiles = prev.filter((_, i) => i !== index);
+      // Reset to step 0 if no files remain
+      if (newFiles.length === 0) {
+        setCurrentStep(0);
+      }
+      return newFiles;
+    });
   };
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
     
-    setUploadProgress(0);
-    await uploadNotes(selectedFiles);
-    
-    // Auto-close after a delay on completion
-    setTimeout(() => {
-      setSelectedFiles([]);
-      onClose?.();
-    }, 2000);
+    try {
+      setCurrentStep(2); // Move to processing step
+      setUploadProgress(0);
+      setIsUploading(true);
+      
+      // Upload files and get response with note IDs
+      const uploadedNotes = await uploadNotes(selectedFiles);
+      
+      // Track the IDs of notes uploaded in this session
+      setUploadedNoteIds(uploadedNotes.map(note => note.id));
+      
+      toast({
+        title: "Upload successful",
+        description: `${selectedFiles.length} file(s) uploaded. AI processing started. You can close this modal and processing will continue in the background.`,
+      });
+      
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload files. Please try again.",
+        variant: "destructive",
+      });
+      
+      // Reset on failure
+      setCurrentStep(1);
+      setUploadProgress(0);
+      setIsUploading(false);
+    }
   };
 
   const resetUploader = () => {
     setSelectedFiles([]);
     setCurrentStep(0);
     setUploadProgress(0);
+    setUploadedNoteIds([]);
+    setIsUploading(false);
+  };
+
+  const handleClose = () => {
+    // Allow closing during processing - background processing will continue
+    if (isUploading && currentStep === 2) {
+      toast({
+        title: "Processing continues in background",
+        description: "Your files are still being processed. Check the dashboard for updates.",
+      });
+    }
+    onClose?.();
   };
 
   return (
@@ -169,11 +342,15 @@ export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose }) => {
                     <p className="text-muted-foreground mb-4">
                       or click to browse your files
                     </p>
-                    <div className="flex justify-center gap-2">
-                      <Badge variant="secondary">JPG</Badge>
+                    <div className="flex justify-center gap-2 mb-2">
                       <Badge variant="secondary">PNG</Badge>
+                      <Badge variant="secondary">JPEG</Badge>
                       <Badge variant="secondary">WebP</Badge>
+                      <Badge variant="secondary">GIF</Badge>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Supported: PNG, JPEG, WebP, and non-animated GIF • Max {Math.round(config.upload.maxFileSize / 1024 / 1024)}MB per file
+                    </p>
                   </div>
                 )}
               </div>
@@ -250,7 +427,7 @@ export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose }) => {
                 <Wand2 className="h-5 w-5 mr-2" />
                 {isLoading ? 'Processing...' : `Process ${selectedFiles.length} File(s)`}
               </Button>
-              <Button variant="outline" onClick={onClose} size="lg" className="h-12">
+              <Button variant="outline" onClick={handleClose} size="lg" className="h-12">
                 Cancel
               </Button>
             </div>
@@ -277,23 +454,81 @@ export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose }) => {
                 </h3>
                 <p className="text-muted-foreground">
                   {currentStep === 2 
-                    ? 'Extracting text, generating summaries, and creating quizzes...'
+                    ? 'Extracting text, generating summaries, and creating quizzes. You can close this modal and processing will continue in the background.'
                     : 'Your notes are ready for studying!'}
                 </p>
               </div>
 
               {currentStep === 2 && (
-                <div className="space-y-2">
-                  <Progress value={uploadProgress} className="w-full h-2" />
-                  <p className="text-sm text-muted-foreground">
-                    {Math.round(uploadProgress)}% complete
-                  </p>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Progress value={uploadProgress} className="w-full h-2" />
+                    <p className="text-sm text-muted-foreground">
+                      {Math.round(uploadProgress)}% complete ({(() => {
+                        const relevantProcessingNotes = processingNotes.filter(note => 
+                          uploadedNoteIds.includes(note.id)
+                        );
+                        const completed = relevantProcessingNotes.filter(n => n.status === 'completed').length;
+                        return `${completed}/${relevantProcessingNotes.length}`;
+                      })()} files)
+                    </p>
+                  </div>
+                  
+                  {/* Individual file progress */}
+                  {uploadedNoteIds.length > 0 && (() => {
+                    const relevantProcessingNotes = processingNotes.filter(note => 
+                      uploadedNoteIds.includes(note.id)
+                    );
+                    return relevantProcessingNotes.length > 0 && (
+                      <div className="max-w-md mx-auto space-y-2">
+                        {relevantProcessingNotes.map((note, index) => (
+                          <div key={note.id} className="flex items-center gap-3 p-2 bg-secondary/30 rounded-lg">
+                            <div className="h-6 w-6 flex items-center justify-center">
+                              {note.status === 'completed' ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              ) : note.status === 'failed' ? (
+                                <AlertCircle className="h-4 w-4 text-red-500" />
+                              ) : (
+                                <div className="h-3 w-3 bg-primary/60 rounded-full animate-pulse" />
+                              )}
+                            </div>
+                            <span className="text-sm flex-1 truncate">{note.filename}</span>
+                            <Badge 
+                              variant={note.status === 'completed' ? 'default' : note.status === 'failed' ? 'destructive' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {note.status === 'completed' ? 'Done' : note.status === 'failed' ? 'Failed' : 'Processing'}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Close button during processing */}
+                  <div className="mt-6">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleClose}
+                      className="w-full"
+                    >
+                      Close (Processing continues in background)
+                    </Button>
+                  </div>
                 </div>
               )}
 
               {currentStep === 3 && (
-                <div className="flex justify-center">
-                  <CheckCircle2 className="h-16 w-16 text-green-500 animate-bounce" />
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <CheckCircle2 className="h-16 w-16 text-green-500 animate-bounce" />
+                  </div>
+                  <Button 
+                    onClick={handleClose}
+                    className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                  >
+                    Done
+                  </Button>
                 </div>
               )}
             </Card>
