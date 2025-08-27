@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: npm i
       - name: Build
-        run: pm run build && cp ./dist/index.html ./dist/404.html
+        run: npm run build && cp ./dist/index.html ./dist/404.html
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
