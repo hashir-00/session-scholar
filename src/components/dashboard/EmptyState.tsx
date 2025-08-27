@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { featureCards, statsData } from '@/data/dashboardData';
 import { getFeatureIcon, getStatIcon } from '@/utils/iconUtils';
+import { config } from '@/config';
 
 interface EmptyStateProps {
   onUploadClick: () => void;
@@ -29,10 +30,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onUploadClick }) => {
         transition={{ delay: 0.3 }}
       >
         <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-amber-900 to-orange-800 bg-clip-text text-transparent">
-          Welcome to StudyAI
+          Welcome to {config.app.title}
         </h2>
         <p className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto">
-          Transform your handwritten notes into intelligent study materials. 
+          {config.app.description}. Transform your handwritten notes into intelligent study materials. 
           Our AI creates summaries, extracts key concepts, and generates personalized quizzes.
         </p>
       </motion.div>

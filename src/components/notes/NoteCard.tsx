@@ -153,8 +153,15 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
           {/* Processing Progress */}
           {note.status === 'processing' && (
             <div className="mb-3 space-y-2">
-              <Progress value={65} className="h-1" />
-              <p className="text-xs text-blue-600 font-medium">AI Processing...</p>
+              <div className="relative">
+                <Progress value={100} className="h-2 bg-blue-100" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 h-2 rounded-full animate-pulse opacity-80"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent h-2 rounded-full animate-[shimmer_2s_infinite] opacity-30"></div>
+              </div>
+              <p className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                <Brain className="h-3 w-3 animate-pulse" />
+                AI Processing...
+              </p>
             </div>
           )}
 

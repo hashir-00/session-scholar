@@ -1,16 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Sparkles } from 'lucide-react';
+import { Brain, Sparkles, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { config } from '@/config';
 
 interface DashboardHeaderProps {
   onUploadClick: () => void;
+  processingNotes?: Array<{id: string, filename: string, status: string}>;
 }
 
-export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onUploadClick }) => {
+export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onUploadClick, processingNotes = [] }) => {
   const navigate = useNavigate();
+  const hasProcessingNotes = processingNotes.length > 0;
   
   return (
     <header className="border-b bg-card/95 backdrop-blur-xl sticky top-0 z-50 border-amber-200/50">
@@ -31,10 +34,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onUploadClick 
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent">
-                  StudyAI
+                  {config.app.title}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Transform notes into knowledge
+                  {config.app.description}
                 </p>
               </div>
             </button>
@@ -42,6 +45,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onUploadClick 
               <Sparkles className="h-3 w-3 mr-1" />
               AI Powered
             </Badge>
+            
+            {hasProcessingNotes && (
+              <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200 animate-pulse">
+                <Clock className="h-3 w-3 mr-1" />
+                Processing {processingNotes.length} file{processingNotes.length !== 1 ? 's' : ''}
+              </Badge>
+            )}
           </motion.div>
           
           <motion.div

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { config } from '@/config';
 
 interface SessionContextType {
   sessionId: string;
@@ -12,11 +13,11 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   useEffect(() => {
     // Get existing session ID from localStorage or create a new one
-    let storedSessionId = localStorage.getItem('studyai_session_id');
+    let storedSessionId = localStorage.getItem(config.app.sessionKey);
     
     if (!storedSessionId) {
       storedSessionId = uuidv4();
-      localStorage.setItem('studyai_session_id', storedSessionId);
+      localStorage.setItem(config.app.sessionKey, storedSessionId);
     }
     
     setSessionId(storedSessionId);
