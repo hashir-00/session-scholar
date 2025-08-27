@@ -14,7 +14,7 @@ export interface Note {
   thumbnailUrl?: string;
   originalImageUrl?: string;
   summary?: string;
-  quiz?: QuizQuestion[];
+  quiz?: BackendQuizResponse;
   explanation?: string | ConceptExplanationResponse;
 }
 
@@ -37,6 +37,36 @@ interface BackendUploadResponse {
   summary: string;
   text_id: string;
   explanation: string;
+}
+
+// Backend MCQ response interfaces
+export interface BackendMCQAnswer {
+  answer: string;
+  correct: boolean;
+}
+
+export interface BackendMCQQuestion {
+  question: string;
+  answers: BackendMCQAnswer[];
+  explanation: string;
+}
+
+export interface BackendQuickQA{
+  correct_answer: string;
+  explanation: string;
+  question: string;
+  other_correct_options: string[];
+}
+
+export interface BackendFlashcard{
+  correct_answer: string; 
+  question: string;
+  explanation: string;
+}
+export interface BackendQuizResponse {
+  MCQ: BackendMCQQuestion[];
+  QuickQA: BackendQuickQA[];
+  Flashcards: BackendFlashcard[];
 }
 
 // Backend explanation response interface
@@ -196,26 +226,31 @@ class NoteService {
 
     // Real backend mode - make API call and update local state
     try {
-      const response = await axios.post(`${API_BASE_URL}/notes/${noteId}/generate/quiz`, {
-        sessionId,
-        type,
-        count,
+      const response = await axios.post(`${API_BASE_URL}/api/generate-quiz/`, {
+        text_id: noteId,
       });
       
-      // Update the local note with the quiz from the response
-      if (response.data && response.data.quiz) {
+      console.log('Real API: Quiz response received:', response.data);
+      
+      // Store the full backend quiz response
+      if (response.data && (response.data.MCQ || response.data.QuickQA || response.data.Flashcards)) {
+        const backendResponse = response.data as BackendQuizResponse;
+        
         const noteIndex = this.realNotes.findIndex(n => n.id === noteId);
         if (noteIndex !== -1) {
           this.realNotes[noteIndex] = {
             ...this.realNotes[noteIndex],
-            quiz: response.data.quiz,
+            quiz: backendResponse,
           };
-          console.log('Real API: Note updated with quiz for noteId:', noteId);
+          console.log('Real API: Note updated with full quiz response for noteId:', noteId);
+          console.log('Real API: MCQ count:', backendResponse.MCQ?.length || 0);
+          console.log('Real API: QuickQA count:', backendResponse.QuickQA?.length || 0);
+          console.log('Real API: Flashcards count:', backendResponse.Flashcards?.length || 0);
         } else {
           console.log('Real API: Note not found for noteId:', noteId);
         }
       } else {
-        console.log('Real API: No quiz in response for noteId:', noteId);
+        console.log('Real API: No quiz data in response for noteId:', noteId);
       }
     } catch (error) {
       console.error('Failed to generate quiz:', error);

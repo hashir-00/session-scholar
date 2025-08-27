@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import { MessageSquare, ChevronDown } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent } from '@/components/ui/card';
-import { QuizQuestion } from '@/api/noteService';
+import { BackendQuickQA } from '@/api/noteService';
 
 interface QAAccordionProps {
-  questions: QuizQuestion[];
+  questions: BackendQuickQA[];
 }
 
 export const QAAccordion: React.FC<QAAccordionProps> = ({ questions }) => {
@@ -27,13 +27,13 @@ export const QAAccordion: React.FC<QAAccordionProps> = ({ questions }) => {
           <Accordion type="multiple" className="space-y-2">
             {questions.map((question, index) => (
               <motion.div
-                key={question.id}
+                key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
                 <AccordionItem 
-                  value={question.id} 
+                  value={`item-${index}`} 
                   className="border-0 bg-white/80 rounded-lg px-4 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <AccordionTrigger className="text-left hover:no-underline py-4 group">
@@ -60,7 +60,7 @@ export const QAAccordion: React.FC<QAAccordionProps> = ({ questions }) => {
                         </div>
                         <div className="space-y-2">
                           <p className="font-semibold text-green-800 text-sm">
-                            {question.correctAnswer}
+                            {question.correct_answer}
                           </p>
                           {question.explanation && (
                             <div className="p-3 bg-green-50 rounded-md border border-green-200">
@@ -73,13 +73,11 @@ export const QAAccordion: React.FC<QAAccordionProps> = ({ questions }) => {
                         </div>
                       </div>
                       
-                      {question.options && question.options.length > 1 && (
+                      {question.other_correct_options && question.other_correct_options.length > 0 && (
                         <div className="ml-9 mt-3">
-                          <p className="text-xs font-medium text-emerald-600 mb-2">Other options considered:</p>
+                          <p className="text-xs font-medium text-emerald-600 mb-2">Other correct answers:</p>
                           <div className="flex flex-wrap gap-2">
-                            {question.options
-                              .filter(option => option !== question.correctAnswer)
-                              .map((option, optionIndex) => (
+                            {question.other_correct_options.map((option, optionIndex) => (
                                 <span
                                   key={optionIndex}
                                   className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs"

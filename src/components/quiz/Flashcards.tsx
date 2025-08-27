@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, ChevronLeft, ChevronRight, Lightbulb } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { QuizQuestion } from '@/api/noteService';
+import { BackendFlashcard } from '@/api/noteService';
 
 interface FlashcardsProps {
-  questions: QuizQuestion[];
+  questions: BackendFlashcard[];
 }
 
 export const Flashcards: React.FC<FlashcardsProps> = ({ questions }) => {
@@ -105,7 +105,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ questions }) => {
                   <span className="text-lg font-bold text-indigo-600">A</span>
                 </div>
                 <h4 className="text-xl font-semibold text-indigo-900 mb-4">
-                  {currentQuestion.correctAnswer}
+                  {currentQuestion.correct_answer}
                 </h4>
                 
                 {currentQuestion.explanation && (

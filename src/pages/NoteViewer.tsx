@@ -409,8 +409,8 @@ const NoteViewer: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {note.quiz && note.quiz.length > 0 ? (
-                      <QuizComponents 
+                    {note.quiz ? (
+                      <QuizComponents
                         questions={note.quiz}
                         focusMode={focusMode}
                         onToggleFocusMode={() => setFocusMode(!focusMode)}
