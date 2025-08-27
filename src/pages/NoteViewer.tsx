@@ -4,22 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, CheckCircle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, MessageSquare, CheckCircle, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { useNotes } from '@/context/NoteContext';
-import { Note, QuizQuestion } from '@/api/noteService';
+import { Note } from '@/api/noteService';
 import { TextReader } from '@/components/notes/TextReader';
+import { ExplanationRenderer } from '@/components/notes/ExplanationRenderer';
+import { QuizComponents } from '@/components/quiz/QuizComponents';
+import { config } from '@/config';
 
 const NoteViewer: React.FC = () => {
   const { noteId } = useParams<{ noteId: string }>();
   const navigate = useNavigate();
-  const { fetchNote, generateSummary, generateQuiz } = useNotes();
+  const { fetchNote, generateQuiz, generateExplanation } = useNotes();
   const [note, setNote] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingContent, setGeneratingContent] = useState<{
-    summary: boolean;
     quiz: boolean;
-  }>({ summary: false, quiz: false });
-  const [quizAnswers, setQuizAnswers] = useState<Record<string, boolean>>({});
+    explanation: boolean;
+  }>({ quiz: false, explanation: false });
+  const [activeTab, setActiveTab] = useState('summary');
+  const [focusMode, setFocusMode] = useState(true);
 
   useEffect(() => {
     const loadNote = async () => {
@@ -38,7 +42,7 @@ const NoteViewer: React.FC = () => {
   useEffect(() => {
     if (!note || !noteId) return;
 
-    const shouldPoll = generatingContent.summary || generatingContent.quiz;
+    const shouldPoll = generatingContent.quiz || generatingContent.explanation;
     if (!shouldPoll) return;
 
     const interval = setInterval(async () => {
@@ -47,35 +51,59 @@ const NoteViewer: React.FC = () => {
         setNote(updatedNote);
         
         // Stop polling if content is ready
-        if (generatingContent.summary && updatedNote.summary) {
-          setGeneratingContent(prev => ({ ...prev, summary: false }));
-        }
         if (generatingContent.quiz && updatedNote.quiz) {
           setGeneratingContent(prev => ({ ...prev, quiz: false }));
         }
+        if (generatingContent.explanation && updatedNote.explanation) {
+          setGeneratingContent(prev => ({ ...prev, explanation: false }));
+        }
       }
-    }, 3000); // Poll every 3 seconds
+    }, config.processing.pollInterval); // Poll based on config
 
     return () => clearInterval(interval);
   }, [noteId, note, generatingContent, fetchNote]);
 
-  const handleGenerateSummary = async () => {
-    if (!noteId) return;
-    setGeneratingContent(prev => ({ ...prev, summary: true }));
-    await generateSummary(noteId);
-  };
-
   const handleGenerateQuiz = async () => {
     if (!noteId) return;
     setGeneratingContent(prev => ({ ...prev, quiz: true }));
-    await generateQuiz(noteId);
+    try {
+      await generateQuiz(noteId);
+      
+      // In real API mode, the quiz might be returned immediately
+      // So we should fetch the updated note right after the API call
+      const updatedNote = await fetchNote(noteId);
+      if (updatedNote && updatedNote.quiz) {
+        setNote(updatedNote);
+        setGeneratingContent(prev => ({ ...prev, quiz: false }));
+      }
+      // If no quiz found immediately, polling will continue via useEffect
+    } catch (error) {
+      console.error('Error generating quiz:', error);
+      setGeneratingContent(prev => ({ ...prev, quiz: false }));
+    }
   };
 
-  const toggleQuizAnswer = (questionId: string) => {
-    setQuizAnswers(prev => ({
-      ...prev,
-      [questionId]: !prev[questionId]
-    }));
+  const handleGenerateExplanation = async () => {
+    if (!noteId) return;
+    setGeneratingContent(prev => ({ ...prev, explanation: true }));
+    try {
+      console.log('NoteViewer: Starting explanation generation for noteId:', noteId);
+      const explanation = await generateExplanation(noteId);
+      console.log('NoteViewer: Received explanation:', explanation ? 'yes' : 'no');
+      
+      // Update the note immediately with the returned explanation (structured or string)
+      if (explanation && note) {
+        const updatedNote = { ...note, explanation };
+        setNote(updatedNote);
+        console.log('NoteViewer: Updated note with explanation');
+      }
+      
+      setGeneratingContent(prev => ({ ...prev, explanation: false }));
+    } catch (error) {
+      console.error('Error generating explanation:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setGeneratingContent(prev => ({ ...prev, explanation: false }));
+    }
   };
 
   if (loading) {
@@ -108,26 +136,47 @@ const NoteViewer: React.FC = () => {
       {/* Header */}
       <header className="border-b bg-card/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/')}
-              className="p-2"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold truncate">{note.filename}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant={note.status === 'completed' ? 'default' : 'secondary'}>
-                  {note.status}
-                </Badge>
-                {note.summary && (
-                  <Badge variant="outline" className="text-xs">Summary Ready</Badge>
-                )}
-                {note.quiz && (
-                  <Badge variant="outline" className="text-xs">Quiz Ready</Badge>
-                )}
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/')}
+                className="p-2 mt-1"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              
+              <div className="flex flex-col gap-3">
+                {/* Clickable Logo */}
+                <button 
+                  onClick={() => navigate('/')}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-amber-700 via-orange-600 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-200/50">
+                    <Brain className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent">
+                      {config.app.title}
+                    </h2>
+                  </div>
+                </button>
+                
+                {/* Note Name */}
+                <div>
+                  <h1 className="text-xl font-semibold truncate">{note.filename}</h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant={note.status === 'completed' ? 'default' : 'secondary'}>
+                      {note.status}
+                    </Badge>
+                    {note.summary && (
+                      <Badge variant="outline" className="text-xs">Summary Ready</Badge>
+                    )}
+                    {note.quiz && (
+                      <Badge variant="outline" className="text-xs">Quiz Ready</Badge>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -140,19 +189,56 @@ const NoteViewer: React.FC = () => {
           {/* Image Panel */}
           <Card className="lg:sticky lg:top-8">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Original Note
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Original Note
+                </div>
+                {activeTab === 'quiz' && (
+                  <Button
+                    onClick={() => setFocusMode(!focusMode)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {focusMode ? (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        Show Image
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="h-4 w-4" />
+                        Focus Mode
+                      </>
+                    )}
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {note.originalImageUrl ? (
-                <div className="rounded-lg overflow-hidden bg-secondary">
+                <div className="relative rounded-lg overflow-hidden bg-secondary">
                   <img 
                     src={note.originalImageUrl} 
                     alt={note.filename}
-                    className="w-full h-auto max-h-96 object-contain"
+                    className={`w-full h-auto max-h-96 object-contain transition-all duration-500 ${
+                      activeTab === 'quiz' && focusMode ? 'blur-md' : 'blur-none'
+                    }`}
                   />
+                  {activeTab === 'quiz' && focusMode && (
+                    <div className="absolute inset-0 bg-amber-900/20 backdrop-blur-sm flex items-center justify-center">
+                      <div className="text-center p-6 bg-white/95 rounded-lg shadow-lg border border-amber-200 max-w-sm">
+                        <div className="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <HelpCircle className="h-6 w-6 text-amber-600" />
+                        </div>
+                        <h3 className="font-semibold text-amber-900 mb-2">Focus Mode Active</h3>
+                        <p className="text-sm text-amber-700">
+                          Image is blurred to help you focus on the quiz
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="h-64 bg-secondary rounded-lg flex items-center justify-center">
@@ -164,12 +250,17 @@ const NoteViewer: React.FC = () => {
 
           {/* Content Panel */}
           <div>
-            <Tabs defaultValue="text" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="text" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Text
-                </TabsTrigger>
+            <Tabs 
+              defaultValue="summary" 
+              className="w-full"
+              onValueChange={(value) => {
+                setActiveTab(value);
+                if (value === 'quiz') {
+                  setFocusMode(true);
+                }
+              }}
+            >
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="summary" className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Summary
@@ -184,58 +275,62 @@ const NoteViewer: React.FC = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="text" className="mt-6">
+              <TabsContent value="summary" className="mt-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Extracted Text</CardTitle>
+                    <CardTitle>AI Summary</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {note.extractedText ? (
+                    {note.summary ? (
                       <div className="prose prose-sm max-w-none">
-                        <pre className="whitespace-pre-wrap text-sm bg-secondary p-4 rounded-lg">
-                          {note.extractedText}
-                        </pre>
+                        <div className="text-sm leading-relaxed whitespace-pre-line">
+                          {note.summary}
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
-                        <FileText className="h-12 w-12 mx-auto mb-4" />
-                        <p>Text extraction is still in progress...</p>
+                        <BookOpen className="h-12 w-12 mx-auto mb-4" />
+                        <p>AI summary is being generated...</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
 
-                {/* Enhanced Text Reader Component */}
-                {note.extractedText && (
+                {/* Enhanced Text Reader Component for Summary */}
+                {note.summary && (
                   <div className="mt-6">
                     <TextReader 
-                      text={note.extractedText} 
-                      title={`${note.filename} - AI Text Reader`}
+                      text={note.summary} 
+                      title={`${note.filename} - AI Summary Reader`}
                     />
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="summary" className="mt-6">
+              <TabsContent value="explanation" className="mt-6">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      AI Summary
-                      {!note.summary && (
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" />
+                        AI Explanation & Learning Insights
+                      </div>
+                      {!note.explanation && !generatingContent.explanation && (
                         <Button 
-                          onClick={handleGenerateSummary}
-                          disabled={generatingContent.summary}
+                          onClick={handleGenerateExplanation}
+                          disabled={generatingContent.explanation}
                           size="sm"
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                         >
-                          {generatingContent.summary ? (
+                          {generatingContent.explanation ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               Generating...
                             </>
                           ) : (
                             <>
-                              <Brain className="h-4 w-4 mr-2" />
-                              Generate Summary
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Generate Explanation
                             </>
                           )}
                         </Button>
@@ -243,88 +338,23 @@ const NoteViewer: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {note.summary ? (
-                      <div className="prose prose-sm max-w-none">
-                        <div className="text-sm leading-relaxed">
-                          {note.summary}
-                        </div>
-                      </div>
-                    ) : generatingContent.summary ? (
-                      <div className="text-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                        <p className="text-muted-foreground">AI is generating your summary...</p>
-                      </div>
-                    ) : (
+                    {generatingContent.explanation ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        <BookOpen className="h-12 w-12 mx-auto mb-4" />
-                        <p className="mb-4">No summary available yet</p>
-                        <p className="text-sm">Click "Generate Summary" to create an AI-powered summary of your notes</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="explanation" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5" />
-                      AI Explanation & Learning Insights
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {note.explanation ? (
-                      <div className="prose prose-sm max-w-none">
-                        <div className="space-y-4">
-                          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0 mt-1">
-                                <Brain className="h-4 w-4 text-white" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-gray-900 mb-2">AI Learning Analysis</h4>
-                                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                                  {note.explanation}
-                                </div>
-                              </div>
-                            </div>
+                        <div className="flex flex-col items-center">
+                          <div className="h-16 w-16 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 flex items-center justify-center mb-4 animate-pulse">
+                            <Brain className="h-8 w-8 text-purple-600" />
                           </div>
-                          
-                          <div className="grid md:grid-cols-2 gap-4 mt-6">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                              <h5 className="font-medium text-green-800 mb-2 flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4" />
-                                Study Tips
-                              </h5>
-                              <ul className="text-sm text-green-700 space-y-1">
-                                <li>• Use active recall techniques</li>
-                                <li>• Create concept maps</li>
-                                <li>• Practice spaced repetition</li>
-                                <li>• Teach concepts to others</li>
-                              </ul>
-                            </div>
-                            
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                              <h5 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
-                                <Brain className="h-4 w-4" />
-                                Learning Approach
-                              </h5>
-                              <ul className="text-sm text-blue-700 space-y-1">
-                                <li>• Visual learners: Use diagrams</li>
-                                <li>• Kinesthetic: Practice exercises</li>
-                                <li>• Auditory: Discuss concepts</li>
-                                <li>• Reading/Writing: Take notes</li>
-                              </ul>
-                            </div>
-                          </div>
+                          <p className="text-lg font-medium mb-2">AI is analyzing your content</p>
+                          <p className="text-sm">Generating detailed explanations and learning insights...</p>
                         </div>
                       </div>
+                    ) : note.explanation ? (
+                      <ExplanationRenderer explanation={note.explanation} />
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
                         <MessageSquare className="h-12 w-12 mx-auto mb-4" />
-                        <p className="mb-4">AI explanation will be available soon</p>
-                        <p className="text-sm">Our AI is analyzing your content to provide personalized learning insights</p>
+                        <p className="mb-4">Generate AI-powered explanations for your notes</p>
+                        <p className="text-sm">Get personalized learning insights, study tips, and detailed concept explanations</p>
                       </div>
                     )}
                   </CardContent>
@@ -359,52 +389,11 @@ const NoteViewer: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     {note.quiz && note.quiz.length > 0 ? (
-                      <div className="space-y-6">
-                        {note.quiz.map((question: QuizQuestion, index: number) => (
-                          <div key={question.id} className="border rounded-lg p-4">
-                            <div className="mb-4">
-                              <h3 className="font-medium mb-3">
-                                {index + 1}. {question.question}
-                              </h3>
-                              <div className="space-y-2">
-                                {question.options.map((option, optionIndex) => (
-                                  <div 
-                                    key={optionIndex}
-                                    className={`p-3 rounded border cursor-pointer transition-colors ${
-                                      quizAnswers[question.id] 
-                                        ? (option === question.correctAnswer 
-                                            ? 'bg-success/10 border-success text-success' 
-                                            : 'bg-secondary border-border')
-                                        : 'bg-secondary border-border hover:bg-secondary/80'
-                                    }`}
-                                  >
-                                    {option}
-                                    {quizAnswers[question.id] && option === question.correctAnswer && (
-                                      <CheckCircle className="h-4 w-4 float-right text-success" />
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleQuizAnswer(question.id)}
-                            >
-                              {quizAnswers[question.id] ? 'Hide Answer' : 'Show Answer'}
-                            </Button>
-                            
-                            {quizAnswers[question.id] && question.explanation && (
-                              <div className="mt-3 p-3 bg-primary/5 rounded border">
-                                <p className="text-sm">
-                                  <strong>Explanation:</strong> {question.explanation}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <QuizComponents 
+                        questions={note.quiz}
+                        focusMode={focusMode}
+                        onToggleFocusMode={() => setFocusMode(!focusMode)}
+                      />
                     ) : generatingContent.quiz ? (
                       <div className="text-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
