@@ -110,7 +110,7 @@ interface QuizQuestion {
 ## 🎨 Design System
 
 ### Color Scheme
-- **Primary**: Blue-based color palette for brand consistency
+- **Primary**: amber-based color palette for brand consistency
 - **Semantic Tokens**: CSS custom properties for theming
 - **Dark/Light Mode**: Automatic theme switching support
 - **Gradients**: Beautiful gradient overlays for visual appeal
@@ -246,13 +246,6 @@ To connect to a real backend:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
 
-For support and questions:
-- Check the [Lovable Documentation](https://docs.lovable.dev/)
-- Join the [Lovable Discord Community](https://discord.com/channels/1119885301872070706/1280461670979993613)
-- Review the codebase and component documentation
-
----
 
 **StudyAI** - Transform your handwritten notes into interactive study materials with the power of AI.
