@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, MessageSquare, CheckCircle, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, MessageSquare, CheckCircle, Eye, EyeOff, Sparkles, Download } from 'lucide-react';
 import { useNotes } from '@/context/NoteContext';
 import { Note } from '@/api/noteService';
 import { TextReader } from '@/components/notes/TextReader';
 import { ExplanationRenderer } from '@/components/notes/ExplanationRenderer';
 import { QuizComponents } from '@/components/quiz/QuizComponents';
+import { DownloadSection } from '@/components/notes/DownloadSection';
+import { downloadPDF } from '@/components/notes/PDFGenerator';
 import { config } from '@/config';
 
 const NoteViewer: React.FC = () => {
@@ -106,6 +108,11 @@ const NoteViewer: React.FC = () => {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    if (!note) return;
+    await downloadPDF(note);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30 flex items-center justify-center">
@@ -170,24 +177,35 @@ const NoteViewer: React.FC = () => {
                       {note.status}
                     </Badge>
                     {note.summary && (
-                      <Badge variant="outline" className="text-xs">Summary Ready</Badge>
+                      <Badge variant="outline" className="text-xs ">
+                        Summary Ready
+                      </Badge>
                     )}
                     {note.explanation && (
-                      <Badge variant="outline" className="text-xs">Explanation Ready</Badge>
+                      <Badge variant="outline" className="text-xs ">
+                        Explanation Ready
+                      </Badge>
                     )}
                     {note.quiz && (
-                      <Badge variant="outline" className="text-xs">Quiz Ready</Badge>
+                      <Badge variant="outline" className="text-xs ">
+                        Quiz Ready
+                      </Badge>
                     )}
                   </div>
                 </div>
               </div>
             </div>
+
+
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Download PDF Button and Status Chips - Top of Content */}
+        <DownloadSection note={note} onDownloadPDF={handleDownloadPDF} />
+
         <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
           {/* Image Panel */}
           <Card className="lg:sticky lg:top-8">
