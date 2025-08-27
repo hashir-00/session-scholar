@@ -104,13 +104,21 @@ class NoteService {
         const note: Note = {
           id: backendData.text_id,
           filename: file.name,
-          status: 'completed', // Backend has already processed the summary
+          status: 'processing', // Initially set as processing even though backend has completed
           summary: backendData.summary,
           explanation: backendData.explanation,
           thumbnailUrl: URL.createObjectURL(file), // Create preview from file
           originalImageUrl: URL.createObjectURL(file) // Create preview from file
         };
         this.realNotes.push(note);
+        
+        // Simulate a delay before marking as completed to show AI processing
+        setTimeout(() => {
+          const noteIndex = this.realNotes.findIndex(n => n.id === backendData.text_id);
+          if (noteIndex !== -1) {
+            this.realNotes[noteIndex].status = 'completed';
+          }
+        }, 3000); // 3 second delay to show AI processing
         
       } catch (error) {
         console.error(`Failed to upload ${file.name}:`, error);

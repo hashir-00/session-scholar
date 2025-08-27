@@ -13,9 +13,10 @@ import { config } from '@/config';
 
 interface NoteUploaderProps {
   onClose?: () => void;
+  autoNavigateOnUpload?: boolean;
 }
 
-export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose }) => {
+export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose, autoNavigateOnUpload = false }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -229,6 +230,12 @@ export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose }) => {
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
     
+    // Auto-navigate immediately when user clicks Process (before upload starts)
+    if (autoNavigateOnUpload) {
+      onClose?.();
+      // Continue with upload in background, but user is redirected immediately
+    }
+    
     try {
       setCurrentStep(2); // Move to processing step
       setUploadProgress(0);
@@ -242,8 +249,15 @@ export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose }) => {
       
       toast({
         title: "Upload successful",
-        description: `${selectedFiles.length} file(s) uploaded. AI processing started. You can close this modal and processing will continue in the background.`,
+        description: `${selectedFiles.length} file(s) uploaded successfully. AI processing started.`,
       });
+      
+      // Auto-close dialog after successful upload to show processing in dashboard
+      if (!autoNavigateOnUpload) {
+        setTimeout(() => {
+          onClose?.();
+        }, 1000); // Give user time to see the success message
+      }
       
     } catch (error) {
       toast({

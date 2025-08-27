@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Sparkles } from 'lucide-react';
+import { FileText, Sparkles, Home } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { featureCards, statsData } from '@/data/dashboardData';
@@ -9,9 +9,10 @@ import { config } from '@/config';
 
 interface EmptyStateProps {
   onUploadClick: () => void;
+  onHomepageClick?: () => void;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ onUploadClick }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ onUploadClick, onHomepageClick }) => {
   return (
     <motion.div 
       className="text-center py-16"
@@ -83,6 +84,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onUploadClick }) => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 1, type: "spring" }}
+        className="flex flex-col sm:flex-row gap-4 justify-center items-center"
       >
         <Button 
           size="lg"
@@ -92,6 +94,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onUploadClick }) => {
           <Sparkles className="h-6 w-6 mr-3" />
           Start Your AI Learning Journey
         </Button>
+        
+        {onHomepageClick && (
+          <Button 
+            size="lg"
+            variant="outline"
+            onClick={onHomepageClick}
+            className="h-14 px-8 text-lg border-2"
+          >
+            <Home className="h-5 w-5 mr-3" />
+            Back to Homepage
+          </Button>
+        )}
       </motion.div>
     </motion.div>
   );
