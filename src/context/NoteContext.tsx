@@ -200,6 +200,7 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       setIsUploading(false);
       setUploadProgress(0);
+      
       toast({
         title: "Upload failed",
         description: window.innerWidth < 640 
