@@ -59,7 +59,7 @@ export interface BackendQuickQA{
 }
 
 export interface BackendFlashcard{
-  correct_answer: string; 
+  correctanswer: string; 
   question: string;
   explanation: string;
 }

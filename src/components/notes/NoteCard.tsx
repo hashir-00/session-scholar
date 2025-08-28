@@ -180,6 +180,12 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
                       Summary
                     </Badge>
                   )}
+                  {note.explanation && (
+                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Explanation
+                    </Badge>
+                  )}
                   {note.quiz && (
                     <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                       <Brain className="h-3 w-3 mr-1" />
@@ -237,10 +243,16 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
                   AI-generated summary
                 </li>
               )}
-              {note.quiz && note.quiz.length > 0 && (
+              {note.explanation && (
                 <li className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-red-500"></div>
-                  Quiz questions ({note.quiz.length} questions)
+                  AI-generated explanation
+                </li>
+              )}
+              {note.quiz && (
+                <li className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-red-500"></div>
+                  Quiz questions ({note.quiz.MCQ.length} questions)
                 </li>
               )}
             </ul>
