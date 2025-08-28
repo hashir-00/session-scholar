@@ -1,12 +1,23 @@
 import axios from 'axios';
 import { config } from '@/config';
 import { MockNoteService, mockTiming, simulateApiDelay, generateMockExplanation } from '@/mocks';
-import { getMockAdditionalContent, getMockAdditionalContentById, MockAdditionalContent, generateMockAdditionalContentFromNotes } from '@/mocks/mockAdditionalContent';
+import { getMockAdditionalContent, getMockAdditionalContentById, generateMockAdditionalContentFromNotes, generateMockAdditionalContentForNote } from '@/mocks/mockAdditionalContent';
 
 const API_BASE_URL = config.api.baseUrl;
 
 // Mock data for development
 const MOCK_MODE = config.dev.mockMode;
+
+export interface AdditionalContent {
+  title: string;
+  subject: string;
+  description: string;
+  content: string;
+  keyPoints: string[];
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  estimatedTime: string;
+  lastUpdated: string;
+}
 
 export interface Note {
   id: string;
@@ -17,6 +28,7 @@ export interface Note {
   summary?: string;
   quiz?: BackendQuizResponse;
   explanation?: string | ConceptExplanationResponse;
+  additionalContent?: AdditionalContent[];
 }
 
 export interface QuizQuestion {
@@ -78,6 +90,12 @@ export interface ConceptExplanationResponse {
   }>;
   learningApproaches: string[];
   studyTips: string[];
+}
+
+// Backend additional content response interface
+export interface BackendAdditionalContentResponse {
+  id: string;
+  notes: AdditionalContent[];
 }
 
 class NoteService {
@@ -187,17 +205,6 @@ class NoteService {
 
     // For real backend mode, find the note in memory
     const note = this.realNotes.find(n => n.id === noteId);
-    console.log('Real API: Getting note for noteId:', noteId);
-    console.log('Real API: Found note:', note ? 'yes' : 'no');
-    if (note) {
-      console.log('Real API: Note has explanation:', !!note.explanation);
-      if (note.explanation) {
-        const explanationLength = typeof note.explanation === 'string' 
-          ? note.explanation.length 
-          : JSON.stringify(note.explanation).length;
-        console.log('Real API: Explanation length:', explanationLength);
-      }
-    }
     if (!note) {
       throw new Error('Note not found');
     }
@@ -231,8 +238,6 @@ class NoteService {
         text_id: noteId,
       });
       
-      console.log('Real API: Quiz response received:', response.data);
-      
       // Store the full backend quiz response
       if (response.data && (response.data.MCQ || response.data.QuickQA || response.data.Flashcards)) {
         const backendResponse = response.data as BackendQuizResponse;
@@ -243,15 +248,7 @@ class NoteService {
             ...this.realNotes[noteIndex],
             quiz: backendResponse,
           };
-          console.log('Real API: Note updated with full quiz response for noteId:', noteId);
-          console.log('Real API: MCQ count:', backendResponse.MCQ?.length || 0);
-          console.log('Real API: QuickQA count:', backendResponse.QuickQA?.length || 0);
-          console.log('Real API: Flashcards count:', backendResponse.Flashcards?.length || 0);
-        } else {
-          console.log('Real API: Note not found for noteId:', noteId);
         }
-      } else {
-        console.log('Real API: No quiz data in response for noteId:', noteId);
       }
     } catch (error) {
       console.error('Failed to generate quiz:', error);
@@ -261,7 +258,6 @@ class NoteService {
 
   async generateExplanation(noteId: string, sessionId: string): Promise<string | ConceptExplanationResponse> {
     if (MOCK_MODE) {
-      console.log('Starting explanation generation in mock mode for noteId:', noteId);
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Use MockNoteService for background simulation
@@ -274,12 +270,9 @@ class NoteService {
 
     // Real backend mode - make API call and return structured data directly
     try {
-      console.log('Real API: Generating explanation for noteId:', noteId);
       const response = await axios.post(`${API_BASE_URL}/api/generate-explanations/`, {
         text_id: noteId,
       });
-      
-      console.log('Real API: Response received:', response.data);
       
       if (response.data) {
         const apiResponse = response.data as ConceptExplanationResponse;
@@ -293,7 +286,6 @@ class NoteService {
               ...this.realNotes[noteIndex],
               explanation: apiResponse,
             };
-            console.log('Real API: Note updated with structured explanation for noteId:', noteId);
           }
           
           return apiResponse;
@@ -311,7 +303,6 @@ class NoteService {
         }
       }
       
-      console.log('Real API: No valid explanation found in response for noteId:', noteId);
       throw new Error('No explanation returned from API');
     } catch (error) {
       console.error('Failed to generate explanation:', error);
@@ -324,7 +315,7 @@ class NoteService {
     subject?: string;
     difficulty?: string;
     limit?: number;
-  }, noteSummaries?: Array<{id: string, summary: string}>): Promise<MockAdditionalContent[]> {
+  }, noteSummaries?: Array<{id: string, summary: string}>): Promise<AdditionalContent[]> {
     if (MOCK_MODE) {
       // Simulate network delay for mock mode
       await simulateApiDelay(mockTiming.api.getNotes);
@@ -347,27 +338,87 @@ class NoteService {
       });
       
       // Transform backend response to frontend format if needed
-      return response.data as MockAdditionalContent[];
+      return response.data as AdditionalContent[];
     } catch (error) {
       console.error('Failed to generate additional content:', error);
       throw error;
     }
   }
 
-  async getAdditionalContentById(id: string): Promise<MockAdditionalContent | null> {
+  async getAdditionalContentById(id: string): Promise<AdditionalContent[]> {
     if (MOCK_MODE) {
       // Simulate network delay for mock mode
       await simulateApiDelay(mockTiming.api.getNote);
       
-      // Return mock data by ID
-      return getMockAdditionalContentById(id);
+      // First check if content already exists in the note
+      const existingNote = MockNoteService.getNote(id);
+      
+      if (existingNote?.additionalContent && existingNote.additionalContent.length > 0) {
+        return existingNote.additionalContent;
+      }
+      
+      // Find the note by ID to get context for generation
+      const note = MockNoteService.getNote(id);
+      
+      if (note && note.summary) {
+        // Generate multiple content items based on the note's context
+        const contentItems: AdditionalContent[] = [];
+        
+        // Generate 2-3 different types of content for each note
+        for (let i = 0; i < 3; i++) {
+          const content = generateMockAdditionalContentForNote(`${id}_${i}`, {
+            filename: note.filename,
+            summary: note.summary
+          });
+          contentItems.push(content);
+        }
+        
+        // Store the generated content in the note object
+        const updateResult = MockNoteService.updateNote(id, { additionalContent: contentItems });
+        
+        return contentItems;
+      }
+      
+      // Fallback to existing mock data if note not found (return as array)
+      const fallbackContent = getMockAdditionalContentById(id);
+      return fallbackContent ? [fallbackContent] : [];
     }
 
     // Real backend mode - make API call to fetch specific additional content
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/additional-content/${id}`);
+      // First check if content already exists in the note
+      const existingNote = this.realNotes.find(n => n.id === id);
+      if (existingNote?.additionalContent && existingNote.additionalContent.length > 0) {
+        return existingNote.additionalContent;
+      }
       
-      return response.data as MockAdditionalContent;
+      const response = await axios.post(`${API_BASE_URL}/api/generate-notes/`, {
+       text_id: id
+      });
+      
+      // Backend returns an object with id and notes array
+      const backendResponse = response.data as BackendAdditionalContentResponse;
+      
+      if (!backendResponse || !backendResponse.notes) {
+        throw new Error('Invalid response format from backend: missing notes array');
+      }
+      
+      const contentItems = backendResponse.notes;
+      
+      if (!Array.isArray(contentItems) || contentItems.length === 0) {
+        throw new Error('No content returned from backend API');
+      }
+      
+      // Store the content in the note object
+      const noteIndex = this.realNotes.findIndex(n => n.id === id);
+      if (noteIndex !== -1) {
+        this.realNotes[noteIndex] = {
+          ...this.realNotes[noteIndex],
+          additionalContent: contentItems,
+        };
+      }
+      
+      return contentItems;
     } catch (error) {
       console.error(`Failed to fetch additional content with ID ${id}:`, error);
       throw error;

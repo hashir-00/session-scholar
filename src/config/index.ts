@@ -11,7 +11,7 @@ export const config = {
 
   // Development Configuration
   dev: {
-    mockMode: import.meta.env.VITE_MOCK_MODE === 'true',
+    mockMode: import.meta.env.VITE_MOCK_MODE === 'true' || import.meta.env.NODE_ENV === 'development',
   },
 
   // App Configuration

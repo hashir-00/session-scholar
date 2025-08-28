@@ -58,17 +58,17 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             {isUploading ? (
               <Badge variant="outline" className="ml-1 sm:ml-2 bg-orange-50 text-orange-700 border-orange-200 animate-pulse text-xs sm:text-sm">
                 <Upload className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">Uploading </span>{uploadProgress}%
+                <span className="hidden sm:inline px-2">Uploading </span>{uploadProgress}%
               </Badge>
             ) : hasProcessingNotes ? (
               <Badge variant="outline" className="ml-1 sm:ml-2 bg-blue-50 text-blue-700 border-blue-200 animate-pulse text-xs sm:text-sm">
                 <Clock className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">AI Processing </span>{processingNotes.length}
+                <span className="hidden sm:inline px-2">AI Processing </span>{processingNotes.length}
               </Badge>
             ) : hasCompletedNotes ? (
               <Badge variant="outline" className="ml-1 sm:ml-2 bg-green-50 text-green-700 border-green-200 text-xs sm:text-sm">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
-                {completedNotes.length}<span className="hidden sm:inline"> Ready</span>
+                {completedNotes.length} <span className="hidden sm:inline px-2"> Ready</span>
               </Badge>
             ) : null}
           </motion.div>

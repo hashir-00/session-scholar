@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { NoteUploader } from '@/components/notes/NoteUploader';
 import { useNotes } from '@/context/NoteContext';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Note } from '@/api/noteService';
 
@@ -14,61 +14,12 @@ import { NotesTabs } from '@/components/dashboard/NotesTabs';
 
 const Dashboard: React.FC = () => {
   const [showUploader, setShowUploader] = useState(false);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [cameFromUpload, setCameFromUpload] = useState(false);
   const { notes, fetchNotes, isLoading, isUploading, uploadProgress, processingNotes: contextProcessingNotes } = useNotes();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     fetchNotes();
   }, [fetchNotes]);
-
-  // Check if user is coming from upload and store it persistently
-  useEffect(() => {
-    const fromUpload = searchParams.get('from') === 'upload';
-    if (fromUpload) {
-      setCameFromUpload(true);
-      // Store in session storage as backup
-      sessionStorage.setItem('dashboardUploadAccess', 'true');
-    } else {
-      // Check session storage on load
-      const hasStoredAccess = sessionStorage.getItem('dashboardUploadAccess') === 'true';
-      if (hasStoredAccess) {
-        setCameFromUpload(true);
-      }
-    }
-  }, [searchParams]);
-
-  // Give some time for processing notes to appear before blocking access
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setInitialLoadComplete(true);
-      // Clean up URL parameter after initial load
-      if (searchParams.get('from') === 'upload') {
-        setSearchParams({});
-      }
-    }, cameFromUpload ? 8000 : 2000); // Give more time if coming from upload
-
-    return () => clearTimeout(timer);
-  }, [cameFromUpload, setSearchParams, searchParams]);
-
-  // Only redirect after initial load is complete and there's clearly no activity
-  // Don't redirect if user came from upload or if there are any notes/processing
-  useEffect(() => {
-    const hasAnyActivity = notes.length > 0 || contextProcessingNotes.length > 0 || cameFromUpload;
-    
-    // Clear session storage once we have actual activity (notes or processing)
-    if (notes.length > 0 || contextProcessingNotes.length > 0) {
-      sessionStorage.removeItem('dashboardUploadAccess');
-    }
-    
-    if (initialLoadComplete && !isLoading && !hasAnyActivity) {
-      // Clear session storage before redirect
-      sessionStorage.removeItem('dashboardUploadAccess');
-      navigate('/', { replace: true });
-    }
-  }, [initialLoadComplete, isLoading, notes.length, contextProcessingNotes.length, navigate, cameFromUpload]);
 
   const handleNoteClick = (noteId: string) => {
     navigate(`/notes/${noteId}`);
