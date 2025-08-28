@@ -105,7 +105,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ questions }) => {
                   <span className="text-lg font-bold text-indigo-600">A</span>
                 </div>
                 <h4 className="text-xl font-semibold text-indigo-900 mb-4">
-                  {currentQuestion.correct_answer}
+                  {currentQuestion.correctanswer}
                 </h4>
                 
                 {currentQuestion.explanation && (

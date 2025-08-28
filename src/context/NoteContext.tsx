@@ -55,6 +55,22 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch updated notes to check status
         const freshNotes = await noteService.getNotes(sessionId);
         
+        // Check for newly completed notes before updating the state
+        const justCompletedNotes = processingNotes.filter(processingNote => {
+          const updatedNote = freshNotes.find(note => note.id === processingNote.id);
+          return updatedNote && updatedNote.status === 'completed' && processingNote.status !== 'completed';
+        });
+        
+        // Show notification for newly completed notes
+        if (justCompletedNotes.length > 0) {
+          setTimeout(() => {
+            toast({
+              title: "Processing complete!",
+              description: `${justCompletedNotes.length} note(s) have been successfully processed.`,
+            });
+          }, 500);
+        }
+        
         // Update processing notes status based on fresh notes
         setProcessingNotes(prevProcessingNotes => {
           return prevProcessingNotes.map(processingNote => {
@@ -84,25 +100,7 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, config.processing.pollInterval); // Poll every few seconds
 
     return () => clearInterval(interval);
-  }, [processingNotes.length, sessionId]);
-
-  // Check for completion and show notifications
-  useEffect(() => {
-    if (processingNotes.length === 0) return;
-
-    // Check if any notes have just completed (status changed to completed but still in processing notes)
-    const justCompletedNotes = processingNotes.filter(note => note.status === 'completed');
-    
-    if (justCompletedNotes.length > 0) {
-      // Show notification for completed notes
-      setTimeout(() => {
-        toast({
-          title: "Processing complete!",
-          description: `${justCompletedNotes.length} note(s) have been successfully processed.`,
-        });
-      }, 500);
-    }
-  }, [processingNotes, toast]);
+  }, [processingNotes, sessionId, toast]);
 
   const uploadNotes = useCallback(async (files: File[]): Promise<Array<{id: string, filename: string, status: string}>> => {
     try {
@@ -189,11 +187,15 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const generateQuiz = useCallback(async (noteId: string) => {
     try {
-      await noteService.generateQuiz(noteId, sessionId);
-      
       toast({
         title: "Quiz generation started",
         description: "AI is generating the quiz. It will be ready shortly.",
+      });
+      await noteService.generateQuiz(noteId, sessionId);
+      
+      toast({
+        title: "Quiz generation Completed",
+        description: "AI has generated the quiz successfully.",
       });
     } catch (error) {
       toast({
@@ -206,6 +208,10 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const generateExplanation = useCallback(async (noteId: string): Promise<string | ConceptExplanationResponse> => {
     try {
+      toast({
+        title: "Explanation generation started",
+        description: "AI is generating detailed explanations for your notes.",
+      });
       const explanation = await noteService.generateExplanation(noteId, sessionId);
       
       toast({
