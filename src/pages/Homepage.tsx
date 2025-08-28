@@ -66,40 +66,47 @@ const Homepage: React.FC = () => {
 
   const features = [
     {
-      icon: <Brain className="h-10 w-10 text-white drop-shadow-sm" />,
-      title: "AI-Powered Analysis",
-      description: "Advanced AI analyzes your notes and extracts key concepts automatically",
+      icon: <Upload className="h-10 w-10 text-white drop-shadow-sm" />,
+      title: "Smart Upload Flow",
+      description: "Three-stage upload process with real-time status updates: Uploading → AI Processing → Ready to Study",
       gradient: "from-amber-500 via-amber-600 to-orange-500"
     },
     {
-      icon: <MessageSquare className="h-10 w-10 text-white drop-shadow-sm" />,
-      title: "Smart Explanations",
-      description: "Get detailed explanations and learning insights tailored to your content",
+      icon: <Brain className="h-10 w-10 text-white drop-shadow-sm" />,
+      title: "AI-Powered Analysis",
+      description: "Advanced AI with intelligent error handling analyzes your notes and extracts key concepts automatically",
       gradient: "from-amber-600 via-orange-500 to-orange-600"
+    },
+    {
+      icon: <BookOpen className="h-10 w-10 text-white drop-shadow-sm" />,
+      title: "Additional Study Materials",
+      description: "Generate comprehensive study materials including detailed notes, mind-maps, key points, and learning resources",
+      gradient: "from-orange-500 via-amber-600 to-amber-600"
+    },
+    {
+      icon: <MessageSquare className="h-10 w-10 text-white drop-shadow-sm" />,
+      title: "Advanced Additional Contents",
+      description: "Unlock extra AI-generated content to deepen your understanding and make revision easier.",
+      gradient: "from-amber-500 via-amber-600 to-amber-600"
     },
     {
       icon: <HelpCircle className="h-10 w-10 text-white drop-shadow-sm" />,
       title: "Interactive Quizzes",
-      description: "Generate practice quizzes to test your understanding and retention",
-      gradient: "from-orange-500 via-amber-600 to-amber-600"
-    },
-    {
-      icon: <BookOpen className="h-10 w-10 text-white drop-shadow-sm" />,
-      title: "Study Materials",
-      description: "Transform notes into comprehensive study materials and summaries",
-      gradient: "from-amber-500 via-amber-600 to-amber-600"
-    },
-    {
-      icon: <Target className="h-10 w-10 text-white drop-shadow-sm" />,
-      title: "Focused Learning",
-      description: "Focus mode helps you concentrate on key concepts and learning objectives",
+      description: "Generate multiple quiz formats including MCQ, Quick Q&A, and Flashcards with immediate feedback",
       gradient: "from-orange-600 via-amber-700 to-amber-700"
+    },
+
+    {
+      icon: <CheckCircle className="h-10 w-10 text-white drop-shadow-sm" />,
+      title: "Real-time Status Updates",
+      description: "Live progress tracking with automatic status transitions and background processing monitoring",
+      gradient: "from-amber-500 via-orange-600 to-orange-600"
     },
     {
       icon: <Sparkles className="h-10 w-10 text-white drop-shadow-sm" />,
-      title: "Smart Insights",
-      description: "Discover learning patterns and get personalized study recommendations",
-      gradient: "from-amber-600 via-orange-600 to-orange-700"
+      title: "Smart Insights & Focus Mode",
+      description: "Discover learning patterns, get personalized recommendations, and use focus mode for better concentration",
+      gradient: "from-orange-500 via-amber-600 to-amber-700"
     }
   ];
 
@@ -180,7 +187,7 @@ const Homepage: React.FC = () => {
             Transform Notes into Knowledge
           </h2>
           <p className="text-lg sm:text-xl text-gray-600 mb-6 sm:mb-8 leading-relaxed px-4">
-            Upload your study materials and let AI create personalized summaries, explanations, and quizzes to accelerate your learning journey.
+           Upload your study materials and let AI create personalized summaries, explanations, quizzes and advance AI powered additional content to accelerate your learning journey.
           </p>
           
           <motion.div 
@@ -298,8 +305,8 @@ const Homepage: React.FC = () => {
             },
             {
               step: "2",
-              title: "AI Processing",
-              description: "Our AI analyzes and extracts key information from your content",
+              title: "Real-time Processing",
+              description: "Watch as your notes move through our three-stage process: Uploading → AI Processing → Ready to Study",
               icon: <Brain className="h-8 w-8" />
             },
             {

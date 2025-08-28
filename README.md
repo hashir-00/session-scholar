@@ -4,16 +4,20 @@ A modern web application that transforms handwritten notes into interactive stud
 
 ## 🚀 Features
 
-- **Note Upload**: Drag-and-drop multiple image files of your handwritten notes
-- **AI Processing**: Automatic text extraction from images using OCR
+- **Note Upload**: Drag-and-drop multiple image files of your handwritten notes with immediate visual feedback
+- **Smart Upload Flow**: Three-stage upload process (Uploading → AI Processing → Ready to Study) with real-time status updates
+- **AI Processing**: Automatic text extraction from images using OCR with intelligent error handling
 - **Smart Summaries**: AI-generated concise summaries of your notes
+- **Additional Study Materials**: Generate comprehensive study materials including detailed notes, key points, and learning resources
+- **Interactive Content Dialog**: View full additional content details in an immersive dialog experience
 - **Interactive Quizzes**: Multiple quiz formats including MCQ, Quick Q&A, and Flashcards
 - **Flow-based Quiz Experience**: Step-by-step quiz navigation with immediate feedback and scoring
 - **AI Explanations**: Detailed learning insights and concept explanations generated on-demand
 - **Interactive Mind Maps**: Visual knowledge maps showing concept relationships and learning pathways
 - **Study Materials Export**: Download comprehensive PDFs with all generated content
+- **Error Handling**: Intelligent error detection with specific feedback for image quality issues
 - **Session-Based**: No login required - data persists in browser sessions
-- **Real-time Updates**: Live progress tracking during AI processing
+- **Real-time Updates**: Live progress tracking during AI processing with automatic status transitions
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Focus Mode**: Blur images during quiz to enhance learning focus
 
@@ -39,14 +43,17 @@ src/
 │   └── noteService.ts          # API service layer with backend integration
 ├── components/
 │   ├── dashboard/
-│   │   ├── CompletedNotesGrid.tsx    # Completed notes display
-│   │   ├── DashboardHeader.tsx       # Dashboard header component
-│   │   ├── EmptyState.tsx            # Empty state UI
-│   │   ├── EmptyTabState.tsx         # Tab empty state
-│   │   ├── ExplanationGrid.tsx       # Explanation content grid
-│   │   ├── LoadingState.tsx          # Loading state UI
-│   │   ├── NotesTabs.tsx             # Dashboard tab navigation
-│   │   └── ProcessingNotesGrid.tsx   # Processing notes display
+│   │   ├── AdditionalContentDialog.tsx   # Full content viewing dialog
+│   │   ├── AdditionalContentGrid.tsx     # Additional content display grid
+│   │   ├── CompletedNotesGrid.tsx        # Completed notes display
+│   │   ├── DashboardHeader.tsx           # Dashboard header component
+│   │   ├── EmptyState.tsx                # Empty state UI
+│   │   ├── EmptyTabState.tsx             # Tab empty state
+│   │   ├── LoadingState.tsx              # Loading state UI
+│   │   ├── NoteAdditionalContentCard.tsx # Individual note content card
+│   │   ├── NotesBasedAdditionalContent.tsx # Notes-based content generation
+│   │   ├── NotesTabs.tsx                 # Dashboard tab navigation
+│   │   └── ProcessingNotesGrid.tsx       # Processing notes display
 │   ├── notes/
 │   │   ├── DownloadSection.tsx       # PDF download functionality
 │   │   ├── ExplanationRenderer.tsx   # Renders AI explanations
@@ -71,11 +78,14 @@ src/
 │   └── mockExplanations.ts           # Mock explanation data
 ├── hooks/
 │   ├── use-mobile.tsx                # Mobile detection hook
-│   └── use-toast.ts                  # Toast notification hook
+│   ├── use-toast.ts                  # Toast notification hook
+│   ├── useAdditionalContent.ts       # Additional content management hook
+│   └── useNotes.ts                   # Notes management hook
 ├── lib/
 │   └── utils.ts                      # Utility functions
 ├── mocks/
 │   ├── index.ts                      # Mock service exports
+│   ├── mockAdditionalContent.ts      # Mock additional content data
 │   ├── mockData.ts                   # Mock data definitions
 │   ├── mockService.ts                # Mock API service
 │   ├── mockTiming.ts                 # Mock timing configuration
@@ -122,9 +132,12 @@ The application works with a Python FastAPI backend:
 - `DELETE /api/notes/{noteId}?sessionId={id}` - Delete a note
 
 #### AI Generation Endpoints
+- `POST /api/process-image/` - Upload and process note images with OCR
 - `POST /api/notes/{noteId}/generate/summary` - Generate note summary
-- `POST /api/notes/{noteId}/generate/quiz` - Generate comprehensive quiz (MCQ, QuickQA, Flashcards)
+- `POST /api/generate-quiz/` - Generate comprehensive quiz (MCQ, QuickQA, Flashcards)
 - `POST /api/generate-explanations/` - Generate detailed explanations and learning insights
+- `POST /api/generate-notes/` - Generate additional study materials and content
+- `POST /api/generate-additional-content/` - Create study materials based on note summaries
 
 ### Data Models
 
@@ -132,13 +145,30 @@ The application works with a Python FastAPI backend:
 ```typescript
 interface Note {
   id: string;
+  backendId?: string; // Real backend ID for API calls
   filename: string;
-  status: 'processing' | 'completed' | 'failed';
+  status: 'uploading' | 'processing' | 'completed' | 'failed';
   thumbnailUrl?: string;
   originalImageUrl?: string;
   summary?: string;
   quiz?: BackendQuizResponse;
   explanation?: string | ConceptExplanationResponse;
+  additionalContent?: AdditionalContent[];
+  errorReason?: string; // Reason for failure
+}
+```
+
+#### Additional Content Interface
+```typescript
+interface AdditionalContent {
+  title: string;
+  subject: string;
+  description: string;
+  content: string;
+  keyPoints: string[];
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  estimatedTime: string;
+  lastUpdated: string;
 }
 ```
 
@@ -285,11 +315,13 @@ Key environment variables:
 
 ### Mock Mode
 The application includes a comprehensive mock mode for development:
-- **File Upload Simulation**: Realistic upload progress and timing
-- **Processing States**: Simulated AI processing with random delays
-- **Data Generation**: Mock text extraction, summaries, explanations, and quizzes
+- **File Upload Simulation**: Realistic upload progress with three-stage flow (uploading → processing → completed)
+- **Processing States**: Simulated AI processing with random delays and automatic status transitions
+- **Error Simulation**: Mock error scenarios with specific error messages
+- **Data Generation**: Mock text extraction, summaries, explanations, quizzes, and additional content
 - **Persistence**: Mock data persists during development session
-- **Background Polling**: Simulated real-time status updates
+- **Background Polling**: Simulated real-time status updates with automatic note transitions
+- **Additional Content**: Mock generation of comprehensive study materials
 
 ### Real API Integration
 To connect to a real backend:
@@ -300,11 +332,14 @@ To connect to a real backend:
 
 ### Backend Integration
 The frontend is designed to work with a Python FastAPI backend that:
-- Handles file uploads and OCR processing
+- Handles file uploads with intelligent image processing and OCR
+- Provides detailed error feedback for image quality and processing issues
 - Generates AI summaries using language models
 - Creates comprehensive quiz content (MCQ, QuickQA, Flashcards)
 - Provides detailed explanations and learning insights
-- Manages session-based data storage
+- Generates additional study materials and content based on note context
+- Manages session-based data storage with automatic cleanup
+- Supports real-time status updates and progress tracking
 
 ### Adding New Features
 
@@ -318,23 +353,35 @@ The frontend is designed to work with a Python FastAPI backend that:
 1. **Landing**: User visits application homepage with feature overview
 2. **Session Creation**: Automatic session ID generation on first visit
 3. **Dashboard**: View uploaded notes organized in tabs (Completed, Processing)
-4. **Upload**: Drag-and-drop note images with progress tracking
-5. **Processing**: Real-time status updates with visual indicators
-6. **Viewing**: Interactive note viewer with tabbed content:
+4. **Upload Flow**: Enhanced three-stage upload process:
+   - **Uploading**: Visual feedback during file upload (2 seconds)
+   - **AI Processing**: Real-time processing status with intelligent error handling
+   - **Ready to Study**: Automatic transition to completed state
+5. **Error Handling**: Intelligent failure detection with specific error messages:
+   - Image quality issues with actionable feedback
+   - Network connectivity problems
+   - Server error handling with retry suggestions
+6. **Processing**: Real-time status updates with visual indicators and automatic polling
+7. **Viewing**: Interactive note viewer with tabbed content:
    - **Summary**: AI-generated text summary with text-to-speech
    - **Explanation**: Detailed concept explanations and study tips
    - **Mind Map**: Visual knowledge map showing concept relationships
    - **Quiz**: Multiple quiz formats with flow-based navigation
-7. **AI Generation**: On-demand content creation:
+8. **Additional Content**: Generate and view comprehensive study materials:
+   - Create multiple study materials per note
+   - View full content in immersive dialog experience
+   - Access detailed study guides, key points, and learning resources
+9. **AI Generation**: On-demand content creation:
    - Generate explanations with structured learning insights
    - Create comprehensive quizzes with multiple question types
-8. **Interactive Learning**: 
-   - Flow-based quiz experience with immediate feedback
-   - Dynamic scoring with performance-based color themes
-   - Focus mode to blur images during quiz
-   - Review all answers with explanations
-9. **Export**: Download comprehensive PDFs with all generated content
-10. **Study Tools**: Text-to-speech, flashcards, mind maps, and spaced repetition
+   - Generate additional study materials based on note content
+10. **Interactive Learning**: 
+    - Flow-based quiz experience with immediate feedback
+    - Dynamic scoring with performance-based color themes
+    - Focus mode to blur images during quiz
+    - Review all answers with explanations
+11. **Export**: Download comprehensive PDFs with all generated content
+12. **Study Tools**: Text-to-speech, flashcards, mind maps, and spaced repetition
 
 ## 🔒 Privacy & Security
 
