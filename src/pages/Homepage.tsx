@@ -371,7 +371,11 @@ const Homepage: React.FC = () => {
 
       {/* Upload Modal */}
       <Dialog open={showUploader} onOpenChange={setShowUploader}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto border-0 bg-gradient-to-br from-background to-amber-50/40 mx-4" aria-describedby="upload-dialog-description">
+          <div className="sr-only">
+            <h2 id="upload-dialog-title">Upload Notes</h2>
+            <p id="upload-dialog-description">Upload your note images to generate AI-powered study materials</p>
+          </div>
           <NoteUploader 
             onClose={handleUploadComplete} 
             autoNavigateOnUpload={true}

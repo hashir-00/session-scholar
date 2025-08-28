@@ -31,7 +31,10 @@ export const AdditionalContentGrid: React.FC = () => {
       // Show info about uploading notes for better content generation
       toast({
         title: "Generating general content",
-        description: "Upload and process some notes to get personalized study materials based on your content.",
+        description: window.innerWidth < 640 
+          ? "Upload notes for personalized content."
+          : "Upload and process some notes to get personalized study materials based on your content.",
+        duration: window.innerWidth < 640 ? 2500 : 4000,
       });
     }
 
@@ -60,16 +63,17 @@ export const AdditionalContentGrid: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
     >
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-orange-600" />
+          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
+            <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-lg bg-orange-100 flex items-center justify-center">
+              <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
             </div>
-            AI Generated Explanations
+            <span className="hidden sm:inline">AI Generated Explanations</span>
+            <span className="sm:hidden">AI Explanations</span>
           </h2>
           {additionalContent.length > 0 && (
-            <p className="text-sm text-amber-700 mt-1">
+            <p className="text-xs sm:text-sm text-amber-700 mt-1">
               {additionalContent.length} study materials available
             </p>
           )}
@@ -77,7 +81,7 @@ export const AdditionalContentGrid: React.FC = () => {
         <Button 
           variant="outline" 
           size="sm" 
-          className="gap-2" 
+          className="gap-1 sm:gap-2 text-sm" 
           onClick={handleGenerateMore}
           disabled={isGenerating}
         >
@@ -140,7 +144,7 @@ export const AdditionalContentGrid: React.FC = () => {
       )}
       
       {additionalContent.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {additionalContent.map((explanation, index) => (
             <motion.div
               key={explanation.id}

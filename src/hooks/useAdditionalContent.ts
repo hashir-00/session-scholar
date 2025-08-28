@@ -40,8 +40,11 @@ export const useAdditionalContent = (): UseAdditionalContentReturn => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch additional content. Please try again.",
+        description: window.innerWidth < 640 
+          ? "Failed to fetch content. Try again."
+          : "Failed to fetch additional content. Please try again.",
         variant: "destructive",
+        duration: window.innerWidth < 640 ? 2000 : 4000,
       });
     } finally {
       setIsLoading(false);
@@ -61,7 +64,10 @@ export const useAdditionalContent = (): UseAdditionalContentReturn => {
       
       toast({
         title: "Generating additional content",
-        description: "AI is analyzing your notes to create relevant study materials...",
+        description: window.innerWidth < 640 
+          ? "AI is creating study materials..."
+          : "AI is analyzing your notes to create relevant study materials...",
+        duration: window.innerWidth < 640 ? 2000 : 3000,
       });
 
       const newContent = await noteService.getAdditionalContent(filters, noteSummaries);
@@ -71,13 +77,19 @@ export const useAdditionalContent = (): UseAdditionalContentReturn => {
       
       toast({
         title: "Content generated successfully",
-        description: `Generated ${newContent.length} new study materials based on your notes.`,
+        description: window.innerWidth < 640 
+          ? `Generated ${newContent.length} new materials.`
+          : `Generated ${newContent.length} new study materials based on your notes.`,
+        duration: window.innerWidth < 640 ? 2000 : 3000,
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to generate additional content. Please try again.",
+        description: window.innerWidth < 640 
+          ? "Failed to generate content. Try again."
+          : "Failed to generate additional content. Please try again.",
         variant: "destructive",
+        duration: window.innerWidth < 640 ? 2000 : 4000,
       });
     } finally {
       setIsGenerating(false);
@@ -91,8 +103,11 @@ export const useAdditionalContent = (): UseAdditionalContentReturn => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch additional content details.",
+        description: window.innerWidth < 640 
+          ? "Failed to fetch content details."
+          : "Failed to fetch additional content details.",
         variant: "destructive",
+        duration: window.innerWidth < 640 ? 2000 : 4000,
       });
       return null;
     }
