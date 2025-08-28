@@ -30,6 +30,7 @@ export interface Note {
   quiz?: BackendQuizResponse;
   explanation?: string | ConceptExplanationResponse;
   additionalContent?: AdditionalContent[];
+  errorReason?: string; // Reason for failure
 }
 
 export interface QuizQuestion {
@@ -436,14 +437,20 @@ class NoteService {
     } catch (error) {
       console.error(`Failed to handle upload flow for ${file.name}:`, error);
       
-      // Update note status to failed
+      // Update note status to failed with error reason
       const noteIndex = this.realNotes.findIndex(n => n.id === tempId);
       if (noteIndex !== -1) {
         this.realNotes[noteIndex] = {
           ...this.realNotes[noteIndex],
           status: 'failed',
+          errorReason: "Upload process failed. Please try again.",
         };
       }
+      
+      // Trigger error handling
+      setTimeout(() => {
+        this.handleProcessingError(tempId, file.name, "Upload process failed. Please try again.");
+      }, 2000);
     }
   }
 
@@ -480,15 +487,47 @@ class NoteService {
     } catch (error) {
       console.error(`Failed to process ${file.name}:`, error);
       
-      // Update note status to failed
+      // Determine error message based on the error type
+      let errorReason = "Image cannot be processed due to lack of visibility, poor image quality, or irrelevant content that is not study material. Please try again with a clearer image of study materials.";
+      
+      // Check if it's a specific backend error
+      if (error.response?.status === 400) {
+        errorReason = "Image cannot be processed due to lack of visibility, poor image quality, or irrelevant content that is not study material. Please try again with a clearer image of study materials.";
+      } else if (error.response?.status === 500) {
+        errorReason = "Server error occurred while processing the image. Please try again later.";
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorReason = "Network connection error. Please check your internet connection and try again.";
+      }
+      
+      // Update note status to failed with error reason
       const noteIndex = this.realNotes.findIndex(n => n.id === tempId);
       if (noteIndex !== -1) {
         this.realNotes[noteIndex] = {
           ...this.realNotes[noteIndex],
           status: 'failed',
+          errorReason: errorReason,
         };
       }
+      
+      // Trigger error handling after a longer delay to allow UI to detect the failed state
+      setTimeout(() => {
+        this.handleProcessingError(tempId, file.name, errorReason);
+      }, 3000); // Increased delay to 3 seconds
     }
+  }
+
+  // Method to handle processing errors
+  private handleProcessingError(noteId: string, filename: string, errorReason: string): void {
+    // Remove the failed note from the session
+    this.removeNote(noteId);
+    
+    // The error details are logged and stored in the note object
+    // The NoteContext polling will detect the failed status and show the appropriate toast
+  }
+
+  // Method to remove a note from the session
+  private removeNote(noteId: string): void {
+    this.realNotes = this.realNotes.filter(n => n.id !== noteId);
   }
 }
 

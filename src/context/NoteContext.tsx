@@ -64,6 +64,18 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return updatedNote && updatedNote.status === 'completed' && processingNote.status !== 'completed';
         });
         
+        // Check for failed notes before updating the state
+        const justFailedNotes = processingNotes.filter(processingNote => {
+          const updatedNote = freshNotes.find(note => note.id === processingNote.id);
+          return updatedNote && updatedNote.status === 'failed' && processingNote.status !== 'failed';
+        });
+        
+        // Check for notes that were removed due to failure
+        const removedFailedNotes = processingNotes.filter(processingNote => {
+          const updatedNote = freshNotes.find(note => note.id === processingNote.id);
+          return !updatedNote && processingNote.status === 'failed';
+        });
+        
         // Show notification for newly completed notes
         if (justCompletedNotes.length > 0) {
           setTimeout(() => {
@@ -77,15 +89,55 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }, 500);
         }
         
+        // Show error notification for failed notes
+        if (justFailedNotes.length > 0) {
+          // Get the error reason from the first failed note (if available)
+          const firstFailedNote = justFailedNotes[0];
+          const updatedFailedNote = freshNotes.find(note => note.id === firstFailedNote.id);
+          const errorReason = updatedFailedNote?.errorReason;
+          
+          setTimeout(() => {
+            toast({
+              title: "Processing failed",
+              description: window.innerWidth < 640 
+                ? errorReason || `${justFailedNotes.length} note(s) failed to process.`
+                : errorReason || `${justFailedNotes.length} note(s) failed to process. Please try uploading again.`,
+              variant: "destructive",
+              duration: window.innerWidth < 640 ? 4000 : 6000,
+            });
+          }, 500);
+        }
+        
+        // Show error notification for removed failed notes (if no justFailedNotes were caught)
+        if (removedFailedNotes.length > 0 && justFailedNotes.length === 0) {
+          setTimeout(() => {
+            toast({
+              title: "Processing failed",
+              description: window.innerWidth < 640 
+                ? `${removedFailedNotes.length} note(s) failed to process.`
+                : `${removedFailedNotes.length} note(s) failed to process. Please try uploading again.`,
+              variant: "destructive",
+              duration: window.innerWidth < 640 ? 3000 : 4000,
+            });
+          }, 500);
+        }
+        
         // Update processing notes status based on fresh notes
         setProcessingNotes(prevProcessingNotes => {
           return prevProcessingNotes.map(processingNote => {
             const updatedNote = freshNotes.find(note => note.id === processingNote.id);
+            
+            // If note is completed, remove from processing notes
             if (updatedNote && updatedNote.status === 'completed') {
-              // Note has completed processing, remove from processing notes
               return null;
             }
             
+            // If note failed or was removed from session, remove from processing notes
+            if (!updatedNote || (updatedNote && updatedNote.status === 'failed')) {
+              return null;
+            }
+            
+            // Update status for notes that are still processing
             if (updatedNote) {
               return {
                 ...processingNote,
@@ -94,7 +146,7 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             
             return processingNote;
-          }).filter(Boolean); // Remove null entries (completed notes)
+          }).filter(Boolean); // Remove null entries (completed or failed notes)
         });
         
         // Also update the main notes state
