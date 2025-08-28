@@ -44,8 +44,9 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
   useEffect(() => {
     const generateMindMapData = () => {
       // Use actual container dimensions for positioning
-      const containerWidth = isFullscreen ? dimensions.width : 800;
-      const containerHeight = isFullscreen ? dimensions.height : 600;
+      const containerWidth = dimensions.width;
+      const containerHeight = dimensions.height;
+      const isMobile = containerWidth < 640;
       
       if (typeof explanation === 'string') {
         // Simple string explanation - create a basic structure
@@ -63,7 +64,7 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
           id: 'explanation',
           label: 'Explanation',
           type: 'concept',
-          x: containerWidth / 2 + 200,
+          x: containerWidth / 2 + (isMobile ? 100 : 200),
           y: containerHeight / 2,
           color: '#3b82f6',
           icon: 'book',
@@ -98,7 +99,9 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
 
       const centerX = containerWidth / 2;
       const centerY = containerHeight / 2;
-      const radius = Math.min(containerWidth, containerHeight) * 0.3;
+      // Adjust radius based on screen size
+      const baseRadius = Math.min(containerWidth, containerHeight) * (isMobile ? 0.25 : 0.3);
+      const radius = Math.max(80, baseRadius); // Minimum radius for mobile
 
       // Concept nodes
       if (structuredExplanation.explanations && structuredExplanation.explanations.length > 0) {
@@ -129,7 +132,7 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
 
       // Study tips nodes
       if (structuredExplanation.studyTips && structuredExplanation.studyTips.length > 0) {
-        const tipRadius = radius * 0.8;
+        const tipRadius = radius * (isMobile ? 0.6 : 0.8); // Closer on mobile
         const startAngle = 0; // Start at 0 degrees
         
         structuredExplanation.studyTips.forEach((tip, index) => {
@@ -162,9 +165,9 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
     };
 
     generateMindMapData();
-  }, [explanation, title, dimensions, isFullscreen]);
+  }, [explanation, title, dimensions]);
 
-  // Handle window resize for fullscreen mode
+  // Handle window resize for responsive design
   useEffect(() => {
     const handleResize = () => {
       if (isFullscreen) {
@@ -173,15 +176,26 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
           height: window.innerHeight - 40
         });
       } else {
-        setDimensions({ width: 800, height: 600 });
+        // Make responsive to container size
+        const isMobile = window.innerWidth < 640;
+        const isTablet = window.innerWidth < 1024;
+        
+        if (isMobile) {
+          setDimensions({ width: window.innerWidth - 32, height: 400 }); // Account for mobile padding
+        } else if (isTablet) {
+          setDimensions({ width: window.innerWidth - 64, height: 500 }); // Account for tablet padding
+        } else {
+          setDimensions({ width: 800, height: 600 });
+        }
       }
     };
 
-    if (isFullscreen) {
-      handleResize();
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
+    // Initial sizing
+    handleResize();
+    
+    // Listen for resize events
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [isFullscreen]);
 
   const getNodeIcon = (iconType: string) => {
@@ -236,8 +250,8 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
     const rect = svgRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const currentWidth = isFullscreen ? dimensions.width : 800;
-    const currentHeight = isFullscreen ? dimensions.height : 600;
+    const currentWidth = dimensions.width;
+    const currentHeight = dimensions.height;
 
     if (draggedNode) {
       // Handle node dragging
@@ -245,8 +259,9 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
       const newY = e.clientY - rect.top - dragOffset.y - panOffset.y;
       
       // Constrain to SVG bounds (accounting for pan offset)
-      const constrainedX = Math.max(30, Math.min(currentWidth - 30, newX));
-      const constrainedY = Math.max(30, Math.min(currentHeight - 30, newY));
+      const nodeRadius = 30; // Max node radius
+      const constrainedX = Math.max(nodeRadius, Math.min(currentWidth - nodeRadius, newX));
+      const constrainedY = Math.max(nodeRadius, Math.min(currentHeight - nodeRadius, newY));
       
       setNodes(prevNodes =>
         prevNodes.map(node =>
@@ -318,38 +333,41 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
 
   const mindMapContent = (
     <div className="relative">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
         <div className="flex items-center gap-2">
-          <GitBranch className="h-5 w-5 text-purple-600" />
-          <h3 className="font-semibold text-gray-900">Knowledge Mind Map</h3>
+          <GitBranch className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+          <h3 className="font-semibold text-sm sm:text-base text-gray-900">Knowledge Mind Map</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {(panOffset.x !== 0 || panOffset.y !== 0) && (
             <Button
               onClick={resetView}
               variant="outline"
               size="sm"
-              className="gap-2"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm"
             >
-              <RotateCcw className="h-4 w-4" />
-              Reset View
+              <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Reset View</span>
+              <span className="sm:hidden">Reset</span>
             </Button>
           )}
           <Button
             onClick={toggleFullscreen}
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="gap-1 sm:gap-2 text-xs sm:text-sm"
           >
             {isFullscreen ? (
               <>
-                <Minimize2 className="h-4 w-4" />
-                Exit Fullscreen
+                <Minimize2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Exit Fullscreen</span>
+                <span className="sm:hidden">Exit</span>
               </>
             ) : (
               <>
-                <Maximize2 className="h-4 w-4" />
-                Fullscreen
+                <Maximize2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Fullscreen</span>
+                <span className="sm:hidden">Full</span>
               </>
             )}
           </Button>
@@ -359,13 +377,14 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
       <div className="relative border-2 border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 overflow-hidden">
         <svg
           ref={svgRef}
-          width={isFullscreen ? dimensions.width : 800}
-          height={isFullscreen ? dimensions.height : 600}
-          className={`block ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
+          width={dimensions.width}
+          height={dimensions.height}
+          className={`block w-full ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onMouseDown={handleCanvasMouseDown}
+          style={{ maxWidth: '100%', height: 'auto' }}
         >
           {/* Background pattern */}
           <defs>
@@ -399,66 +418,84 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
             })}
 
             {/* Nodes */}
-            {nodes.map((node) => (
-              <g key={node.id}>
-                {/* Node background */}
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r={node.type === 'central' ? 30 : 20}
-                  fill={node.color}
-                  className={`transition-all duration-200 ${
-                    node.type === 'central' 
-                      ? 'cursor-default' 
-                      : draggedNode === node.id 
-                        ? 'cursor-grabbing' 
-                        : 'cursor-grab'
-                  } ${
-                    selectedNode?.id === node.id ? 'drop-shadow-lg' : 'hover:drop-shadow-md'
-                  }`}
-                  onClick={() => handleNodeClick(node)}
-                  onMouseDown={(e) => handleMouseDown(e, node)}
-                  style={{
-                    filter: draggedNode === node.id ? 'brightness(1.1)' : undefined
-                  }}
-                />
-                
-                {/* Node icon */}
-                <foreignObject
-                  x={node.x - 6}
-                  y={node.y - 6}
-                  width="12"
-                  height="12"
-                  className="pointer-events-none"
-                >
-                  {getNodeIcon(node.icon)}
-                </foreignObject>
+            {nodes.map((node) => {
+              const isMobile = dimensions.width < 640;
+              const nodeRadius = node.type === 'central' ? (isMobile ? 25 : 30) : (isMobile ? 16 : 20);
+              const iconSize = isMobile ? 4 : 6;
+              const labelOffset = node.type === 'central' ? (isMobile ? 35 : 45) : (isMobile ? 28 : 35);
+              
+              return (
+                <g key={node.id}>
+                  {/* Node background */}
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={nodeRadius}
+                    fill={node.color}
+                    className={`transition-all duration-200 ${
+                      node.type === 'central' 
+                        ? 'cursor-default' 
+                        : draggedNode === node.id 
+                          ? 'cursor-grabbing' 
+                          : 'cursor-grab'
+                    } ${
+                      selectedNode?.id === node.id ? 'drop-shadow-lg' : 'hover:drop-shadow-md'
+                    }`}
+                    onClick={() => handleNodeClick(node)}
+                    onMouseDown={(e) => handleMouseDown(e, node)}
+                    style={{
+                      filter: draggedNode === node.id ? 'brightness(1.1)' : undefined
+                    }}
+                  />
+                  
+                  {/* Node icon */}
+                  <foreignObject
+                    x={node.x - iconSize}
+                    y={node.y - iconSize}
+                    width={iconSize * 2}
+                    height={iconSize * 2}
+                    className="pointer-events-none"
+                  >
+                    <div className="flex items-center justify-center w-full h-full">
+                      {React.cloneElement(getNodeIcon(node.icon), { 
+                        className: `h-${iconSize > 4 ? '3' : '2'} w-${iconSize > 4 ? '3' : '2'} text-white` 
+                      })}
+                    </div>
+                  </foreignObject>
 
-                {/* Node label */}
-                <text
-                  x={node.x}
-                  y={node.y + (node.type === 'central' ? 45 : 35)}
-                  textAnchor="middle"
-                  className="fill-gray-700 font-medium text-sm pointer-events-none"
-                >
-                  {node.label.length > 20 ? `${node.label.substring(0, 20)}...` : node.label}
-                </text>
-              </g>
-            ))}
+                  {/* Node label */}
+                  <text
+                    x={node.x}
+                    y={node.y + labelOffset}
+                    textAnchor="middle"
+                    className={`fill-gray-700 font-medium pointer-events-none ${
+                      isMobile ? 'text-xs' : 'text-sm'
+                    }`}
+                  >
+                    {isMobile && node.label.length > 15 
+                      ? `${node.label.substring(0, 15)}...` 
+                      : node.label.length > 20 
+                        ? `${node.label.substring(0, 20)}...` 
+                        : node.label
+                    }
+                  </text>
+                </g>
+              );
+            })}
           </g>
         </svg>
 
         {/* Node details panel */}
         {selectedNode && selectedNode.description && (
-          <div className="absolute top-4 right-4 max-w-xs">
+          <div className="absolute top-2 sm:top-4 right-2 sm:right-4 max-w-[280px] sm:max-w-xs z-10">
             <Card className="shadow-lg border-2 border-purple-300">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
+              <CardHeader className="pb-2 p-3 sm:p-4">
+                <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
                   {getNodeIcon(selectedNode.icon)}
                   {selectedNode.label}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 p-3 sm:p-4">
                 <p className="text-xs text-gray-600 leading-relaxed">
                   {selectedNode.description}
                 </p>
@@ -468,8 +505,9 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
         )}
 
         {/* Instructions */}
-        <div className="absolute bottom-4 left-4 text-xs text-gray-500 bg-white/80 px-2 py-1 rounded">
-          Click nodes to view details • Drag nodes to reposition • Drag canvas to pan
+        <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 text-xs text-gray-500 bg-white/80 px-2 py-1 rounded max-w-[calc(100%-1rem)] sm:max-w-none">
+          <span className="hidden sm:inline">Click nodes to view details • Drag nodes to reposition • Drag canvas to pan</span>
+          <span className="sm:hidden">Tap nodes • Drag to move</span>
         </div>
       </div>
     </div>
@@ -477,7 +515,7 @@ export const MindMap: React.FC<MindMapProps> = ({ explanation, title = "Knowledg
 
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-50 bg-white p-4">
+      <div className="fixed inset-0 z-50 bg-white p-2 sm:p-4">
         {mindMapContent}
       </div>
     );

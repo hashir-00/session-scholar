@@ -173,25 +173,49 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ questions }) =
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="space-y-3 ">
+      {/* Mobile Header - Score and Progress on Top */}
+      <div className="block sm:hidden space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 flex items-center justify-center">
+              <HelpCircle className="h-3 w-3 text-white" />
+            </div>
+            <h3 className="text-sm font-bold text-amber-900">Interactive Quiz Flow</h3>
+          </div>
+          <Badge variant="outline" className="bg-amber-50 text-xs">
+            <Target className="h-3 w-3 mr-1" />
+            Score: {score}/{answers.length}
+          </Badge>
+        </div>
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+            <span>{Math.round(progress)}% Complete</span>
+          </div>
+          <Progress value={progress} className="h-1.5" />
+        </div>
+      </div>
+
+      {/* Desktop Header - Original Layout */}
+      <div className="hidden sm:flex items-center gap-2 mb-3 mt-1">
         <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 flex items-center justify-center">
           <HelpCircle className="h-4 w-4 text-white" />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 m-1">
           <h3 className="text-lg font-bold text-amber-900">Interactive Quiz Flow</h3>
           <p className="text-xs text-amber-700">Answer questions one by one with immediate feedback</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-amber-50 text-xs">
             <Target className="h-3 w-3 mr-1" />
-            Score: {score}/{answers.length + (showResult ? 1 : 0)}
+            Score: {score}/{answers.length}
           </Badge>
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="space-y-1">
+      {/* Desktop Progress Bar */}
+      <div className="hidden sm:block space-y-1">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
           <span>{Math.round(progress)}% Complete</span>
@@ -213,39 +237,38 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ questions }) =
             >
               <Card className="h-full overflow-hidden border-0 shadow-lg bg-gradient-to-br from-amber-50/70 to-orange-50/70">
                 <CardContent className="p-4 h-full flex flex-col">
-                  {/* Navigation Buttons at Top */}
+                  {/* Navigation Buttons */}
                   <div className="flex justify-between items-center pb-3 border-b mb-4">
                     <Button
                       onClick={handlePrevious}
                       disabled={currentQuestionIndex === 0}
                       variant="outline"
                       size="sm"
+                      className="flex-1 sm:flex-none mr-2"
                     >
                       <ChevronLeft className="h-4 w-4 mr-1" />
-                      Previous
+                      <span className="hidden xs:inline">Previous</span>
+                      <span className="xs:hidden">Prev</span>
                     </Button>
 
-                    <div className="text-center">
-                      <Badge variant="outline" className="bg-amber-50 text-xs">
-                        <Target className="h-3 w-3 mr-1" />
-                        {currentQuestionIndex + 1} of {questions.length}
-                      </Badge>
-                    </div>
+                  
 
                     <Button
                       onClick={handleNext}
                       disabled={!showResult}
                       size="sm"
-                      className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
+                      className="flex-1 sm:flex-none ml-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
                     >
                       {currentQuestionIndex === questions.length - 1 ? (
                         <>
-                          Finish Quiz
+                          <span className="hidden xs:inline">Finish Quiz</span>
+                          <span className="xs:hidden">Finish</span>
                           <Trophy className="h-4 w-4 ml-1" />
                         </>
                       ) : (
                         <>
-                          Next
+                          <span className="hidden xs:inline">Next</span>
+                          <span className="xs:hidden">Next</span>
                           <ChevronRight className="h-4 w-4 ml-1" />
                         </>
                       )}

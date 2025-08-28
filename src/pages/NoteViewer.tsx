@@ -177,28 +177,34 @@ const NoteViewer: React.FC = () => {
                 
                 {/* Note Name */}
                 <div>
-                  <h1 className="text-xl font-semibold truncate">{note.filename}</h1>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={note.status === 'completed' ? 'default' : 'secondary'}>
+                  <h1 className="text-lg sm:text-xl font-semibold truncate">{note.filename}</h1>
+                  {/* Status Badge */}
+                  <div className="mt-1 mb-2">
+                    <Badge variant={note.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
                       {note.status}
                     </Badge>
+                  </div>
+                  {/* Ready Status Chips */}
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     {note.summary && (
-                      <Badge variant="outline" className="text-xs ">
+                      <Badge variant="outline" className="text-xs px-2 py-0.5">
                         Summary Ready
                       </Badge>
                     )}
                     {note.explanation && (
-                      <Badge variant="outline" className="text-xs ">
-                        Explanation Ready
+                      <Badge variant="outline" className="text-xs px-2 py-0.5">
+                        <span className="hidden sm:inline">Explanation Ready</span>
+                        <span className="sm:hidden">Explanation</span>
                       </Badge>
                     )}
                     {note.explanation && (
-                      <Badge variant="outline" className="text-xs ">
-                        Mind Map Ready
+                      <Badge variant="outline" className="text-xs px-2 py-0.5">
+                        <span className="hidden sm:inline">Mind Map Ready</span>
+                        <span className="sm:hidden">Mind Map</span>
                       </Badge>
                     )}
                     {note.quiz && (
-                      <Badge variant="outline" className="text-xs ">
+                      <Badge variant="outline" className="text-xs px-2 py-0.5">
                         Quiz Ready
                       </Badge>
                     )}
@@ -292,22 +298,24 @@ const NoteViewer: React.FC = () => {
                 }
               }}
             >
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="summary" className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Summary
+              <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+                <TabsTrigger value="summary" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">
+                  <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>Summary</span>
                 </TabsTrigger>
-                <TabsTrigger value="explanation" className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Explanation
+                <TabsTrigger value="explanation" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">
+                  <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Explanation</span>
+                  <span className="sm:hidden">Explain</span>
                 </TabsTrigger>
-                <TabsTrigger value="mindmap" className="flex items-center gap-2">
-                  <GitBranch className="h-4 w-4" />
-                  Mind Map
+                <TabsTrigger value="mindmap" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">
+                  <GitBranch className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Mind Map</span>
+                  <span className="sm:hidden">Map</span>
                 </TabsTrigger>
-                <TabsTrigger value="quiz" className="flex items-center gap-2">
-                  <HelpCircle className="h-4 w-4" />
-                  Quiz
+                <TabsTrigger value="quiz" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm">
+                  <HelpCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>Quiz</span>
                 </TabsTrigger>
               </TabsList>
 

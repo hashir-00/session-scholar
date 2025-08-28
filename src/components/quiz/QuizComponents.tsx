@@ -23,27 +23,30 @@ export const QuizComponents: React.FC<QuizComponentsProps> = ({ questions, focus
     
         <CardContent className="p-6">
           <Tabs defaultValue="interactive" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 bg-card/70 backdrop-blur-sm border shadow-lg h-12 border-amber-200/30">
+            <TabsList className="grid w-full h-full grid-cols-1 sm:grid-cols-3 bg-card/70 backdrop-blur-sm border shadow-lg min-h-12 sm:h-12 border-amber-200/30 gap-1 sm:gap-0 p-1">
               <TabsTrigger 
                 value="interactive" 
-                className="text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-600 data-[state=active]:to-orange-600 data-[state=active]:text-white flex items-center gap-2"
+                className="text-xs sm:text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-600 data-[state=active]:to-orange-600 data-[state=active]:text-white flex flex-row items-center gap-1 sm:gap-2 h-10 sm:h-auto px-2 sm:px-3 justify-center"
               >
-                <HelpCircle className="h-4 w-4" />
-                Interactive Quiz
+                <HelpCircle className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                <span className="hidden sm:inline">Interactive Quiz</span>
+                <span className="sm:hidden">Quiz</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="accordion" 
-                className="text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-green-600 data-[state=active]:text-white flex items-center gap-2"
+                className="text-xs sm:text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-green-600 data-[state=active]:text-white flex flex-row items-center gap-1 sm:gap-2 h-10 sm:h-auto px-2 sm:px-3 justify-center"
               >
-                <MessageSquare className="h-4 w-4" />
-                Quick Q&A
+                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                <span className="hidden sm:inline">Quick Q&A</span>
+                <span className="sm:hidden">Q&A</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="flashcards" 
-                className="text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white flex items-center gap-2"
+                className="text-xs sm:text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white flex flex-row items-center gap-1 sm:gap-2 h-10 sm:h-auto px-2 sm:px-3 justify-center"
               >
-                <Lightbulb className="h-4 w-4" />
-                Flashcards
+                <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                <span className="hidden sm:inline">Flashcards</span>
+                <span className="sm:hidden">Cards</span>
               </TabsTrigger>
             </TabsList>
 
