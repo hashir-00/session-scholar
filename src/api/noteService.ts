@@ -491,9 +491,10 @@ class NoteService {
       let errorReason = "Image cannot be processed due to lack of visibility, poor image quality, or irrelevant content that is not study material. Please try again with a clearer image of study materials.";
       
       // Check if it's a specific backend error
-      if (error.response?.status === 400) {
+      if (error.response?.status === 500 &&  error.response?.data) {
         errorReason = "Image cannot be processed due to lack of visibility, poor image quality, or irrelevant content that is not study material. Please try again with a clearer image of study materials.";
-      } else if (error.response?.status === 500) {
+      }  
+      else if (error.response?.status === 500 ) {
         errorReason = "Server error occurred while processing the image. Please try again later.";
       } else if (error.code === 'NETWORK_ERROR') {
         errorReason = "Network connection error. Please check your internet connection and try again.";

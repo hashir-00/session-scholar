@@ -546,11 +546,11 @@ export const NoteUploader: React.FC<NoteUploaderProps> = ({ onClose, autoNavigat
               </Card>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 ">
                 <Button 
                   onClick={handleUpload}
                   disabled={isLoading}
-                  className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 h-10 text-sm font-medium"
+                  className="md:flex-1 sm:w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 h-10 text-sm font-medium "
                   size="sm"
                 >
                   <Wand2 className="h-4 w-4 mr-2" />
