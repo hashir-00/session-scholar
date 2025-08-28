@@ -7,8 +7,7 @@ import { Note } from '@/api/noteService';
 import { EmptyTabState } from './EmptyTabState';
 import { ProcessingNotesGrid } from './ProcessingNotesGrid';
 import { CompletedNotesGrid } from './CompletedNotesGrid';
-import { AdditionalContentGrid } from './AdditionalContentGrid';
-import { useAdditionalContent } from '@/hooks/useAdditionalContent';
+import { NotesBasedAdditionalContent } from './NotesBasedAdditionalContent';
 
 interface NotesTabsProps {
   processingNotes: Note[];
@@ -23,7 +22,9 @@ export const NotesTabs: React.FC<NotesTabsProps> = ({
 }) => {
   // Simple state for manual tab switching only
   const [activeTab, setActiveTab] = useState<string>("processing");
-  const { additionalContent } = useAdditionalContent();
+  
+  // Count of notes ready for additional content generation
+  const notesReadyForContent = completedNotes.filter(note => note.summary).length;
   
   return (
     <motion.div 
@@ -67,9 +68,9 @@ export const NotesTabs: React.FC<NotesTabsProps> = ({
             <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Additional Contents</span>
             <span className="sm:hidden">More</span>
-            {additionalContent.length > 0 && (
+            {notesReadyForContent > 0 && (
               <Badge variant="secondary" className="bg-orange-100 text-orange-800 ml-1 text-xs">
-                {additionalContent.length}
+                {notesReadyForContent}
               </Badge>
             )}
           </TabsTrigger>
@@ -102,7 +103,7 @@ export const NotesTabs: React.FC<NotesTabsProps> = ({
         </TabsContent>
 
         <TabsContent value="explanations" className="space-y-4 sm:space-y-6">
-          <AdditionalContentGrid />
+          <NotesBasedAdditionalContent />
         </TabsContent>
       </Tabs>
     </motion.div>

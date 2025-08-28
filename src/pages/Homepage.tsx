@@ -59,6 +59,8 @@ const Homepage: React.FC = () => {
 
   const handleUploadComplete = () => {
     setShowUploader(false);
+    // Set session access before navigating
+    sessionStorage.setItem('dashboardUploadAccess', 'true');
     navigate('/dashboard?from=upload');
   };
 

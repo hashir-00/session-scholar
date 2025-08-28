@@ -147,7 +147,7 @@ export const AdditionalContentGrid: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {additionalContent.map((explanation, index) => (
             <motion.div
-              key={explanation.id}
+              key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}

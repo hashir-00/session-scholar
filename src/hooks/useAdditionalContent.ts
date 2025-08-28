@@ -1,10 +1,9 @@
 import { useState, useCallback } from 'react';
-import { noteService } from '@/api/noteService';
-import { MockAdditionalContent } from '@/mocks/mockAdditionalContent';
+import { noteService, AdditionalContent } from '@/api/noteService';
 import { useToast } from '@/hooks/use-toast';
 
 interface UseAdditionalContentReturn {
-  additionalContent: MockAdditionalContent[];
+  additionalContent: AdditionalContent[];
   isLoading: boolean;
   isGenerating: boolean;
   fetchAdditionalContent: (filters?: {
@@ -17,12 +16,12 @@ interface UseAdditionalContentReturn {
     difficulty?: string;
     limit?: number;
   }) => Promise<void>;
-  getAdditionalContentById: (id: string) => Promise<MockAdditionalContent | null>;
+  getAdditionalContentById: (id: string) => Promise<AdditionalContent[]>;
   clearAdditionalContent: () => void;
 }
 
 export const useAdditionalContent = (): UseAdditionalContentReturn => {
-  const [additionalContent, setAdditionalContent] = useState<MockAdditionalContent[]>([]);
+  const [additionalContent, setAdditionalContent] = useState<AdditionalContent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -96,10 +95,10 @@ export const useAdditionalContent = (): UseAdditionalContentReturn => {
     }
   }, [toast]);
 
-  const getAdditionalContentById = useCallback(async (id: string): Promise<MockAdditionalContent | null> => {
+  const getAdditionalContentById = useCallback(async (id: string): Promise<AdditionalContent[]> => {
     try {
       const content = await noteService.getAdditionalContentById(id);
-      return content;
+      return content || [];
     } catch (error) {
       toast({
         title: "Error",
@@ -109,7 +108,7 @@ export const useAdditionalContent = (): UseAdditionalContentReturn => {
         variant: "destructive",
         duration: window.innerWidth < 640 ? 2000 : 4000,
       });
-      return null;
+      return [];
     }
   }, [toast]);
 
