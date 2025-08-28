@@ -21,8 +21,9 @@ export interface AdditionalContent {
 
 export interface Note {
   id: string;
+  backendId?: string; // Real backend ID for API calls
   filename: string;
-  status: 'processing' | 'completed' | 'failed';
+  status: 'uploading' | 'processing' | 'completed' | 'failed';
   thumbnailUrl?: string;
   originalImageUrl?: string;
   summary?: string;
@@ -124,55 +125,33 @@ class NoteService {
       return uploadedNotes;
     }
 
-    // Send files one by one to match backend API
+    // Create notes immediately as uploading and return them to UI
     const uploadResponses: UploadResponse[] = [];
     
     for (const file of files) {
-      const formData = new FormData();
-      formData.append('file', file); // Backend expects 'file' parameter
-      // Note: sessionId is not used by current backend but keeping for future compatibility
+      // Generate a temporary ID for immediate UI display
+      const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      try {
-        const response = await axios.post(`${API_BASE_URL}/api/process-image/`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+      const uploadResponse: UploadResponse = {
+        id: tempId,
+        filename: file.name,
+        status: 'uploading' // Start with uploading status
+      };
+      
+      uploadResponses.push(uploadResponse);
 
-        // Transform backend response to frontend format
-        const backendData: BackendUploadResponse = response.data;
-        const uploadResponse: UploadResponse = {
-          id: backendData.text_id, // Use text_id as the note ID
-          filename: file.name, // Use original filename from file object
-          status: 'processing' // Set as processing for UI consistency
-        };
+      // Create note immediately in uploading state
+      const note: Note = {
+        id: tempId,
+        filename: file.name,
+        status: 'uploading',
+        thumbnailUrl: URL.createObjectURL(file),
+        originalImageUrl: URL.createObjectURL(file)
+      };
+      this.realNotes.push(note);
 
-        uploadResponses.push(uploadResponse);
-
-        // Store the backend response to create note later
-        const note: Note = {
-          id: backendData.text_id,
-          filename: file.name,
-          status: 'processing', // Initially set as processing even though backend has completed
-          summary: backendData.summary,
-          explanation: backendData.explanation,
-          thumbnailUrl: URL.createObjectURL(file), // Create preview from file
-          originalImageUrl: URL.createObjectURL(file) // Create preview from file
-        };
-        this.realNotes.push(note);
-        
-        // Simulate a delay before marking as completed to show AI processing
-        setTimeout(() => {
-          const noteIndex = this.realNotes.findIndex(n => n.id === backendData.text_id);
-          if (noteIndex !== -1) {
-            this.realNotes[noteIndex].status = 'completed';
-          }
-        }, 3000); // 3 second delay to show AI processing
-        
-      } catch (error) {
-        console.error(`Failed to upload ${file.name}:`, error);
-        // Continue with other files even if one fails
-      }
+      // Start the upload and processing flow
+      this.handleUploadFlow(file, tempId);
     }
 
     if (uploadResponses.length === 0) {
@@ -234,8 +213,12 @@ class NoteService {
 
     // Real backend mode - make API call and update local state
     try {
+      // Find the note and get the backend ID
+      const note = this.realNotes.find(n => n.id === noteId);
+      const backendId = note?.backendId || noteId; // Use backendId if available, fallback to noteId
+      
       const response = await axios.post(`${API_BASE_URL}/api/generate-quiz/`, {
-        text_id: noteId,
+        text_id: backendId,
       });
       
       // Store the full backend quiz response
@@ -270,8 +253,12 @@ class NoteService {
 
     // Real backend mode - make API call and return structured data directly
     try {
+      // Find the note and get the backend ID
+      const note = this.realNotes.find(n => n.id === noteId);
+      const backendId = note?.backendId || noteId; // Use backendId if available, fallback to noteId
+      
       const response = await axios.post(`${API_BASE_URL}/api/generate-explanations/`, {
-        text_id: noteId,
+        text_id: backendId,
       });
       
       if (response.data) {
@@ -392,8 +379,11 @@ class NoteService {
         return existingNote.additionalContent;
       }
       
+      // Use backendId if available, fallback to the provided id
+      const backendId = existingNote?.backendId || id;
+      
       const response = await axios.post(`${API_BASE_URL}/api/generate-notes/`, {
-       text_id: id
+       text_id: backendId
       });
       
       // Backend returns an object with id and notes array
@@ -422,6 +412,82 @@ class NoteService {
     } catch (error) {
       console.error(`Failed to fetch additional content with ID ${id}:`, error);
       throw error;
+    }
+  }
+
+  // Method to handle the upload flow: uploading -> processing -> completed
+  private async handleUploadFlow(file: File, tempId: string): Promise<void> {
+    try {
+      // Show uploading state for 2 seconds
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Update to processing state
+      const noteIndex = this.realNotes.findIndex(n => n.id === tempId);
+      if (noteIndex !== -1) {
+        this.realNotes[noteIndex] = {
+          ...this.realNotes[noteIndex],
+          status: 'processing',
+        };
+      }
+      
+      // Now start the actual file processing
+      this.processFileInBackground(file, tempId);
+      
+    } catch (error) {
+      console.error(`Failed to handle upload flow for ${file.name}:`, error);
+      
+      // Update note status to failed
+      const noteIndex = this.realNotes.findIndex(n => n.id === tempId);
+      if (noteIndex !== -1) {
+        this.realNotes[noteIndex] = {
+          ...this.realNotes[noteIndex],
+          status: 'failed',
+        };
+      }
+    }
+  }
+
+  // Private method to process files in the background
+  private async processFileInBackground(file: File, tempId: string): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/process-image/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Transform backend response to frontend format
+      const backendData: BackendUploadResponse = response.data;
+      
+      // Update the note with the real data from backend
+      const noteIndex = this.realNotes.findIndex(n => n.id === tempId);
+      if (noteIndex !== -1) {
+        this.realNotes[noteIndex] = {
+          ...this.realNotes[noteIndex],
+          // Keep the temp ID for UI consistency, but store the real backend ID for API calls
+          status: 'completed',
+          summary: backendData.summary,
+          explanation: backendData.explanation,
+        };
+        
+        // Store the real backend ID for future API calls (quiz, explanation, etc.)
+        // We'll need to modify other methods to handle this mapping
+        this.realNotes[noteIndex].backendId = backendData.text_id;
+      }
+    } catch (error) {
+      console.error(`Failed to process ${file.name}:`, error);
+      
+      // Update note status to failed
+      const noteIndex = this.realNotes.findIndex(n => n.id === tempId);
+      if (noteIndex !== -1) {
+        this.realNotes[noteIndex] = {
+          ...this.realNotes[noteIndex],
+          status: 'failed',
+        };
+      }
     }
   }
 }
