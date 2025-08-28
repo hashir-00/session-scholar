@@ -23,11 +23,7 @@ export const CompletedNotesGrid: React.FC<CompletedNotesGridProps> = ({ notes, o
         </div>
         Ready for Learning
       </h2>
-      <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-sm">
-        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
-        Study All
-      </Button>
-    </div>
+          </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
       {notes.map((note, index) => (
         <motion.div
