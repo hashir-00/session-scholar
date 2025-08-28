@@ -1,4 +1,4 @@
-export interface MockExplanation {
+export interface MockAdditionalContent {
   id: string;
   title: string;
   subject: string;
@@ -9,7 +9,7 @@ export interface MockExplanation {
   lastUpdated: string;
 }
 
-export const mockExplanations: MockExplanation[] = [
+export const mockAdditionalGrid: MockAdditionalContent[] = [
   {
     id: 'exp_1',
     title: 'Mathematical Foundations',
@@ -101,3 +101,84 @@ export const mockExplanations: MockExplanation[] = [
     lastUpdated: '1 week ago'
   }
 ];
+
+/**
+ * Get mock additional content by filters
+ */
+export const getMockAdditionalContent = (filters?: {
+  subject?: string;
+  difficulty?: string;
+  limit?: number;
+}): MockAdditionalContent[] => {
+  let filteredContent = [...mockAdditionalGrid];
+
+  if (filters?.subject) {
+    filteredContent = filteredContent.filter(item => 
+      item.subject.toLowerCase().includes(filters.subject!.toLowerCase())
+    );
+  }
+
+  if (filters?.difficulty) {
+    filteredContent = filteredContent.filter(item => 
+      item.difficulty === filters.difficulty
+    );
+  }
+
+  if (filters?.limit) {
+    filteredContent = filteredContent.slice(0, filters.limit);
+  }
+
+  return filteredContent;
+};
+
+/**
+ * Get single mock additional content item by ID
+ */
+export const getMockAdditionalContentById = (id: string): MockAdditionalContent | null => {
+  return mockAdditionalGrid.find(item => item.id === id) || null;
+};
+
+/**
+ * Generate mock additional content based on note summaries
+ */
+export const generateMockAdditionalContentFromNotes = (
+  noteSummaries: Array<{id: string, summary: string}>,
+  count: number = 3
+): MockAdditionalContent[] => {
+  // If no note summaries provided, return random content
+  if (noteSummaries.length === 0) {
+    return getMockAdditionalContent({ limit: count });
+  }
+
+  // Generate content based on note topics
+  const generatedContent: MockAdditionalContent[] = [];
+  const subjects = ['Mathematics', 'Science', 'Literature', 'History', 'Computer Science', 'Physics'];
+  const difficulties: ('Beginner' | 'Intermediate' | 'Advanced')[] = ['Beginner', 'Intermediate', 'Advanced'];
+  
+  for (let i = 0; i < count; i++) {
+    const noteIndex = i % noteSummaries.length;
+    const noteContext = noteSummaries[noteIndex];
+    const subject = subjects[Math.floor(Math.random() * subjects.length)];
+    const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+    
+    const content: MockAdditionalContent = {
+      id: `generated_${Date.now()}_${i}`,
+      title: `Advanced Study Guide: ${subject} Concepts`,
+      subject,
+      description: `Comprehensive study material generated from your uploaded notes. Covers key concepts and provides detailed explanations based on "${noteContext.summary.slice(0, 50)}...".`,
+      keyPoints: [
+        'Core concepts from your notes',
+        'Extended explanations and examples',
+        'Practice problems and exercises',
+        'Real-world applications'
+      ],
+      difficulty,
+      estimatedTime: `${Math.floor(Math.random() * 15) + 5} min read`,
+      lastUpdated: 'Just now'
+    };
+    
+    generatedContent.push(content);
+  }
+  
+  return generatedContent;
+};

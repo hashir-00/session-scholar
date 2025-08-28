@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download } from 'lucide-react';
+import { Download, GitBranch } from 'lucide-react';
 import { Note } from '@/api/noteService';
 
 interface DownloadSectionProps {
@@ -34,8 +34,14 @@ export const DownloadSection: React.FC<DownloadSectionProps> = ({ note, onDownlo
                Explanation Ready
             </Badge>
           )}
-          {note.quiz && (
+          {note.explanation && (
             <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-300 px-3 py-1">
+              <GitBranch className="h-3 w-3 mr-1" />
+              Mind Map Ready
+            </Badge>
+          )}
+          {note.quiz && (
+            <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-300 px-3 py-1">
                Quiz Ready
             </Badge>
           )}

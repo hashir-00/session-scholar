@@ -51,20 +51,20 @@ export const Stepper: React.FC<StepperProps> = ({
               <div
                 className={cn(
                   'flex items-center justify-center rounded-full border-2 transition-all duration-300',
-                  'h-10 w-10',
+                  'h-8 w-8 sm:h-10 sm:w-10',
                   isCompleted && 'bg-primary border-primary text-primary-foreground',
                   isCurrent && 'bg-primary/10 border-primary text-primary',
                   isUpcoming && 'bg-muted border-muted-foreground/30 text-muted-foreground'
                 )}
               >
                 {isCompleted ? (
-                  <Check className="h-5 w-5" />
+                  <Check className="h-4 w-4 sm:h-5 sm:w-5" />
                 ) : step.icon ? (
-                  <div className="h-5 w-5 flex items-center justify-center">
+                  <div className="h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center">
                     {step.icon}
                   </div>
                 ) : (
-                  <span className="text-sm font-medium">{index + 1}</span>
+                  <span className="text-xs sm:text-sm font-medium">{index + 1}</span>
                 )}
               </div>
               
@@ -74,7 +74,7 @@ export const Stepper: React.FC<StepperProps> = ({
                 !isHorizontal && 'ml-4 mt-0 text-left self-start'
               )}>
                 <div className={cn(
-                  'text-sm font-medium transition-colors',
+                  'text-xs sm:text-sm font-medium transition-colors',
                   isCompleted && 'text-primary',
                   isCurrent && 'text-foreground',
                   isUpcoming && 'text-muted-foreground'
@@ -83,7 +83,7 @@ export const Stepper: React.FC<StepperProps> = ({
                 </div>
                 {step.description && (
                   <div className={cn(
-                    'text-xs transition-colors mt-1',
+                    'text-xs transition-colors mt-1 hidden sm:block',
                     isCompleted && 'text-primary/70',
                     isCurrent && 'text-muted-foreground',
                     isUpcoming && 'text-muted-foreground/70'
@@ -100,8 +100,8 @@ export const Stepper: React.FC<StepperProps> = ({
                 className={cn(
                   'transition-colors duration-300',
                   isHorizontal 
-                    ? 'flex-1 h-0.5 mx-4' 
-                    : 'w-0.5 h-8 ml-5 my-2',
+                    ? 'flex-1 h-0.5 mx-2 sm:mx-4' 
+                    : 'w-0.5 h-6 sm:h-8 ml-4 sm:ml-5 my-2',
                   isCompleted ? 'bg-primary' : 'bg-muted-foreground/30'
                 )}
               />

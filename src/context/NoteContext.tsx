@@ -38,8 +38,11 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch notes. Please try again.",
+        description: window.innerWidth < 640 
+          ? "Failed to fetch notes. Try again."
+          : "Failed to fetch notes. Please try again.",
         variant: "destructive",
+        duration: window.innerWidth < 640 ? 2000 : 4000,
       });
     } finally {
       setIsLoading(false);
@@ -66,7 +69,10 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTimeout(() => {
             toast({
               title: "Processing complete!",
-              description: `${justCompletedNotes.length} note(s) have been successfully processed.`,
+              description: window.innerWidth < 640 
+                ? `${justCompletedNotes.length} note(s) processed.`
+                : `${justCompletedNotes.length} note(s) have been successfully processed.`,
+              duration: window.innerWidth < 640 ? 2000 : 3000,
             });
           }, 500);
         }
@@ -144,8 +150,11 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUploadProgress(0);
       toast({
         title: "Upload failed",
-        description: "Failed to upload notes. Please try again.",
+        description: window.innerWidth < 640 
+          ? "Failed to upload notes. Try again."
+          : "Failed to upload notes. Please try again.",
         variant: "destructive",
+        duration: window.innerWidth < 640 ? 2000 : 4000,
       });
       throw error; // Re-throw so the uploader component can handle it
     } finally {
@@ -160,8 +169,11 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch note details.",
+        description: window.innerWidth < 640 
+          ? "Failed to fetch note details."
+          : "Failed to fetch note details.",
         variant: "destructive",
+        duration: window.innerWidth < 640 ? 2000 : 4000,
       });
       return null;
     }
@@ -174,13 +186,19 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({
         title: "Note deleted",
-        description: "Note has been successfully deleted.",
+        description: window.innerWidth < 640 
+          ? "Note deleted successfully."
+          : "Note has been successfully deleted.",
+        duration: window.innerWidth < 640 ? 1500 : 3000,
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete note. Please try again.",
+        description: window.innerWidth < 640 
+          ? "Failed to delete note. Try again."
+          : "Failed to delete note. Please try again.",
         variant: "destructive",
+        duration: window.innerWidth < 640 ? 2000 : 4000,
       });
     }
   }, [sessionId, toast]);
@@ -189,19 +207,28 @@ export const NoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       toast({
         title: "Quiz generation started",
-        description: "AI is generating the quiz. It will be ready shortly.",
+        description: window.innerWidth < 640 
+          ? "AI is generating the quiz."
+          : "AI is generating the quiz. It will be ready shortly.",
+        duration: window.innerWidth < 640 ? 2000 : 3000,
       });
       await noteService.generateQuiz(noteId, sessionId);
       
       toast({
         title: "Quiz generation Completed",
-        description: "AI has generated the quiz successfully.",
+        description: window.innerWidth < 640 
+          ? "Quiz generated successfully."
+          : "AI has generated the quiz successfully.",
+        duration: window.innerWidth < 640 ? 2000 : 3000,
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to start quiz generation.",
+        description: window.innerWidth < 640 
+          ? "Failed to generate quiz."
+          : "Failed to start quiz generation.",
         variant: "destructive",
+        duration: window.innerWidth < 640 ? 2000 : 4000,
       });
     }
   }, [sessionId, toast]);

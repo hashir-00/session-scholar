@@ -107,12 +107,12 @@ const Dashboard: React.FC = () => {
         completedNotes={completedNotes}
       />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-4 sm:py-8">
         {isLoading && notes.length === 0 && contextProcessingNotes.length === 0 ? (
           <LoadingState />
         ) : (
           <motion.div 
-            className="space-y-8"
+            className="space-y-6 sm:space-y-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
@@ -127,7 +127,7 @@ const Dashboard: React.FC = () => {
       </main>
 
       <Dialog open={showUploader} onOpenChange={setShowUploader}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto border-0 bg-gradient-to-br from-background to-amber-50/40" aria-describedby="upload-dialog-description">
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto border-0 bg-gradient-to-br from-background to-amber-50/40 mx-4" aria-describedby="upload-dialog-description">
           <div className="sr-only">
             <h2 id="upload-dialog-title">Upload Notes</h2>
             <p id="upload-dialog-description">Upload your note images to generate AI-powered study materials</p>

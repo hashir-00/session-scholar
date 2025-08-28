@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, MessageSquare, CheckCircle, Eye, EyeOff, Sparkles, Download } from 'lucide-react';
+import { ArrowLeft, FileText, BookOpen, HelpCircle, Loader2, Brain, MessageSquare, CheckCircle, Eye, EyeOff, Sparkles, Download, GitBranch } from 'lucide-react';
 import { useNotes } from '@/context/NoteContext';
 import { Note } from '@/api/noteService';
 import { TextReader } from '@/components/notes/TextReader';
 import { ExplanationRenderer } from '@/components/notes/ExplanationRenderer';
+import { MindMap } from '@/components/notes/MindMap';
 import { QuizComponents } from '@/components/quiz/QuizComponents';
 import { DownloadSection } from '@/components/notes/DownloadSection';
 import { downloadPDF } from '@/components/notes/PDFGenerator';
@@ -26,6 +27,7 @@ const NoteViewer: React.FC = () => {
   }>({ quiz: false, explanation: false });
   const [activeTab, setActiveTab] = useState('summary');
   const [focusMode, setFocusMode] = useState(true);
+  const [mindMapSVG, setMindMapSVG] = useState<string>('');
 
   useEffect(() => {
     const loadNote = async () => {
@@ -110,7 +112,11 @@ const NoteViewer: React.FC = () => {
 
   const handleDownloadPDF = async () => {
     if (!note) return;
-    await downloadPDF(note);
+    await downloadPDF(note, mindMapSVG);
+  };
+
+  const handleMindMapExport = (svgString: string) => {
+    setMindMapSVG(svgString);
   };
 
   if (loading) {
@@ -184,6 +190,11 @@ const NoteViewer: React.FC = () => {
                     {note.explanation && (
                       <Badge variant="outline" className="text-xs ">
                         Explanation Ready
+                      </Badge>
+                    )}
+                    {note.explanation && (
+                      <Badge variant="outline" className="text-xs ">
+                        Mind Map Ready
                       </Badge>
                     )}
                     {note.quiz && (
@@ -281,7 +292,7 @@ const NoteViewer: React.FC = () => {
                 }
               }}
             >
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="summary" className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Summary
@@ -289,6 +300,10 @@ const NoteViewer: React.FC = () => {
                 <TabsTrigger value="explanation" className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
                   Explanation
+                </TabsTrigger>
+                <TabsTrigger value="mindmap" className="flex items-center gap-2">
+                  <GitBranch className="h-4 w-4" />
+                  Mind Map
                 </TabsTrigger>
                 <TabsTrigger value="quiz" className="flex items-center gap-2">
                   <HelpCircle className="h-4 w-4" />
@@ -376,6 +391,64 @@ const NoteViewer: React.FC = () => {
                         <MessageSquare className="h-12 w-12 mx-auto mb-4" />
                         <p className="mb-4">Generate AI-powered explanations for your notes</p>
                         <p className="text-sm">Get personalized learning insights, study tips, and detailed concept explanations</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="mindmap" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <GitBranch className="h-5 w-5" />
+                        Knowledge Mind Map
+                      </div>
+                      {!note.explanation && !generatingContent.explanation && (
+                        <Button 
+                          onClick={handleGenerateExplanation}
+                          disabled={generatingContent.explanation}
+                          size="sm"
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                        >
+                          {generatingContent.explanation ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Generate Explanation
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {generatingContent.explanation ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <div className="flex flex-col items-center">
+                          <div className="h-16 w-16 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 flex items-center justify-center mb-4 animate-pulse">
+                            <GitBranch className="h-8 w-8 text-purple-600" />
+                          </div>
+                          <p className="text-lg font-medium mb-2">AI is analyzing your content</p>
+                          <p className="text-sm">Generating visual mind map and knowledge connections...</p>
+                        </div>
+                      </div>
+                    ) : note.explanation ? (
+                      <MindMap 
+                        explanation={note.explanation} 
+                        title={note.filename}
+                        onExportSVG={handleMindMapExport}
+                      />
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <GitBranch className="h-12 w-12 mx-auto mb-4" />
+                        <p className="mb-4">Generate a visual mind map of your notes</p>
+                        <p className="text-sm">Create an interactive knowledge map showing concepts, learning approaches, and study tips</p>
                       </div>
                     )}
                   </CardContent>

@@ -13,10 +13,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FileText, Clock, CheckCircle, AlertCircle, Trash2, Brain, Sparkles, BookOpen, TriangleAlert } from 'lucide-react';
+import { FileText, Clock, CheckCircle, AlertCircle, Trash2, Brain, Sparkles, BookOpen, TriangleAlert, GitBranch } from 'lucide-react';
 import { Note } from '@/api/noteService';
-import { useNotes } from '@/context/NoteContext';
 import { motion } from 'framer-motion';
+import { useNotes } from '@/context/NoteContext';
 
 interface NoteCardProps {
   note: Note;
@@ -186,6 +186,12 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
                       Explanation
                     </Badge>
                   )}
+                  {note.explanation && (
+                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                      <GitBranch className="h-3 w-3 mr-1" />
+                      Mind Map
+                    </Badge>
+                  )}
                   {note.quiz && (
                     <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                       <Brain className="h-3 w-3 mr-1" />
@@ -246,7 +252,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
               {note.explanation && (
                 <li className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-red-500"></div>
-                  AI-generated explanation
+                  AI-generated explanation & mind map
                 </li>
               )}
               {note.quiz && (
