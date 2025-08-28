@@ -198,6 +198,7 @@ interface QuizQuestion {
 ## 🎨 Design System
 
 ### Color Scheme
+
 - **Primary**: Amber/Orange gradient themes for brand consistency
 - **Semantic Colors**: Dynamic color theming based on quiz performance
   - Green (≥70% accuracy): Excellence theme
@@ -374,7 +375,7 @@ The project is configured for GitHub Pages deployment:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+
 
 For support and questions:
 - Review the codebase and component documentation
@@ -383,4 +384,5 @@ For support and questions:
 
 ---
 
-**SessionScholar** - Transform your handwritten notes into interactive study materials with the power of AI.
+**StudyAI** - Transform your handwritten notes into interactive study materials with the power of AI.
+
