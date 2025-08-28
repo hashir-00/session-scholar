@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdditionalContent } from '@/hooks/useAdditionalContent';
 import { useNotes } from '@/context/NoteContext';
 import { Note, AdditionalContent } from '@/api/noteService';
+import { AdditionalContentDialog } from './AdditionalContentDialog';
 
 interface NoteAdditionalContentCardProps {
   note: Note;
@@ -15,12 +16,19 @@ interface NoteAdditionalContentCardProps {
 
 export const NoteAdditionalContentCard: React.FC<NoteAdditionalContentCardProps> = ({ note }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedContent, setSelectedContent] = useState<AdditionalContent | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { getAdditionalContentById } = useAdditionalContent();
   const { fetchNotes } = useNotes();
   const { toast } = useToast();
 
   // Use the additional content from the note object directly
   const generatedContent = note.additionalContent || [];
+
+  const handleViewContent = (content: AdditionalContent) => {
+    setSelectedContent(content);
+    setIsDialogOpen(true);
+  };
 
   const handleGenerate = async () => {
     if (!note.summary) {
@@ -220,7 +228,12 @@ export const NoteAdditionalContentCard: React.FC<NoteAdditionalContentCardProps>
                         <MessageSquare className="h-3 w-3" />
                         <span>{content.estimatedTime || '5 min read'}</span>
                       </div>
-                      <Button size="sm" variant="outline" className="h-6 px-2 text-xs border-amber-300 hover:bg-amber-50 text-amber-700">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-6 px-2 text-xs border-amber-300 hover:bg-amber-50 text-amber-700"
+                        onClick={() => handleViewContent(content)}
+                      >
                         View Full
                       </Button>
                     </div>
@@ -231,6 +244,12 @@ export const NoteAdditionalContentCard: React.FC<NoteAdditionalContentCardProps>
           )}
         </CardContent>
       </Card>
+      
+      <AdditionalContentDialog
+        content={selectedContent}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+      />
     </motion.div>
   );
 };
