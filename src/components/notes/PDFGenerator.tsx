@@ -2,6 +2,7 @@ import { Note, BackendQuizResponse, BackendMCQQuestion } from '@/api/noteService
 
 interface PDFGeneratorProps {
   note: Note;
+  mindMapSVG?: string;
 }
 
 interface Concept {
@@ -21,11 +22,14 @@ interface StructuredExplanation {
   [key: string]: unknown;
 }
 
-export const generatePDFContent = ({ note }: PDFGeneratorProps): string => {
+export const generatePDFContent = ({ note, mindMapSVG }: PDFGeneratorProps): string => {
   // Generate tags list
   const tags = [];
   if (note.summary) tags.push('Summary Ready');
-  if (note.explanation) tags.push('Explanation Ready');  
+  if (note.explanation) {
+    tags.push('Explanation Ready');
+    tags.push('Mind Map Ready');
+  }
   if (note.quiz) tags.push('Quiz Ready');
 
   // Format explanation content
@@ -195,6 +199,140 @@ export const generatePDFContent = ({ note }: PDFGeneratorProps): string => {
     formatted += `</div>`;
 
     return formatted;
+  };
+
+  // Format mind map content for PDF
+  const formatMindMap = (explanation: string | StructuredExplanation | unknown): string => {
+    // If we have an SVG snapshot, use it
+    if (mindMapSVG) {
+      return `
+        <div class="mindmap-container">
+          <div class="mindmap-snapshot">
+            <h4>🗺️ Knowledge Mind Map</h4>
+            <div class="mindmap-svg-container">
+              ${mindMapSVG}
+            </div>
+            <p class="mindmap-note"><em>📝 Interactive mind map visualization of your notes' key concepts and relationships.</em></p>
+          </div>
+        </div>
+      `;
+    }
+
+    // Fallback to text-based representation if no SVG is available
+    if (typeof explanation === 'string') {
+      return `
+        <div class="mindmap-container">
+          <div class="mindmap-note">
+            <p><em>📝 Note: Mind map content is based on the explanation provided.</em></p>
+            <div class="mindmap-text-content">${explanation}</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // If explanation is structured (object), create a hierarchical mind map view
+    if (explanation && typeof explanation === 'object') {
+      const structuredExplanation = explanation as StructuredExplanation;
+      let formatted = `
+        <div class="mindmap-container">
+          <div class="mindmap-center">
+            <div class="central-node">${note.filename}</div>
+          </div>
+          <div class="mindmap-branches">
+      `;
+      
+      // Key Concepts Branch
+      if (structuredExplanation.explanations && Array.isArray(structuredExplanation.explanations)) {
+        formatted += `
+          <div class="mindmap-branch">
+            <div class="branch-header">
+              <div class="branch-icon">🧠</div>
+              <h4>Key Concepts</h4>
+            </div>
+            <div class="concept-nodes">
+        `;
+        
+        structuredExplanation.explanations.forEach((item, index) => {
+          formatted += `
+            <div class="concept-node">
+              <div class="node-title">${item.concept}</div>
+              <div class="node-description">${item.explanation}</div>
+            </div>
+          `;
+        });
+        
+        formatted += `
+            </div>
+          </div>
+        `;
+      }
+      
+      // Learning Approaches Branch
+      if (structuredExplanation.learningApproaches && Array.isArray(structuredExplanation.learningApproaches)) {
+        formatted += `
+          <div class="mindmap-branch">
+            <div class="branch-header">
+              <div class="branch-icon">💡</div>
+              <h4>Learning Approaches</h4>
+            </div>
+            <div class="approach-nodes">
+        `;
+        
+        structuredExplanation.learningApproaches.forEach((approach, index) => {
+          formatted += `
+            <div class="approach-node">
+              <div class="node-content">${approach}</div>
+            </div>
+          `;
+        });
+        
+        formatted += `
+            </div>
+          </div>
+        `;
+      }
+      
+      // Study Tips Branch
+      const tips = structuredExplanation.learningTips || structuredExplanation.studyTips;
+      if (tips && Array.isArray(tips)) {
+        formatted += `
+          <div class="mindmap-branch">
+            <div class="branch-header">
+              <div class="branch-icon">✅</div>
+              <h4>Study Tips</h4>
+            </div>
+            <div class="tip-nodes">
+        `;
+        
+        tips.forEach((tip, index) => {
+          formatted += `
+            <div class="tip-node">
+              <div class="node-content">${tip}</div>
+            </div>
+          `;
+        });
+        
+        formatted += `
+            </div>
+          </div>
+        `;
+      }
+      
+      formatted += `
+          </div>
+        </div>
+      `;
+      
+      return formatted;
+    }
+    
+    return `
+      <div class="mindmap-container">
+        <div class="mindmap-note">
+          <p><em>📝 Note: No structured content available for mind map visualization.</em></p>
+        </div>
+      </div>
+    `;
   };
 
   // Create HTML content for PDF
@@ -472,6 +610,132 @@ export const generatePDFContent = ({ note }: PDFGeneratorProps): string => {
           font-style: italic;
           padding: 40px;
         }
+        
+        /* Mind Map Styles */
+        .mindmap-container {
+          background: linear-gradient(to bottom right, #fef7ff, #f0f9ff);
+          border: 2px solid #d8b4fe;
+          border-radius: 12px;
+          padding: 20px;
+          margin: 15px 0;
+        }
+        .mindmap-snapshot {
+          text-align: center;
+        }
+        .mindmap-snapshot h4 {
+          color: #7c3aed;
+          margin-bottom: 15px;
+          font-size: 18px;
+        }
+        .mindmap-svg-container {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 20px;
+          margin: 10px 0;
+          overflow: hidden;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .mindmap-svg-container svg {
+          max-width: 100%;
+          height: auto;
+          display: block;
+        }
+        .mindmap-note {
+          font-size: 12px;
+          color: #6b7280;
+          font-style: italic;
+          margin-top: 10px;
+        }
+        .mindmap-center {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .central-node {
+          display: inline-block;
+          background: linear-gradient(to right, #7c3aed, #3b82f6);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 20px;
+          font-weight: bold;
+          font-size: 16px;
+          box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+        }
+        .mindmap-branches {
+          display: grid;
+          gap: 15px;
+        }
+        .mindmap-branch {
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 15px;
+          background: white;
+        }
+        .branch-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #f3f4f6;
+        }
+        .branch-icon {
+          font-size: 18px;
+        }
+        .branch-header h4 {
+          margin: 0;
+          color: #374151;
+          font-size: 14px;
+        }
+        .concept-nodes, .approach-nodes, .tip-nodes {
+          display: grid;
+          gap: 8px;
+        }
+        .concept-node, .approach-node, .tip-node {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 10px;
+        }
+        .concept-node {
+          border-left: 3px solid #3b82f6;
+        }
+        .approach-node {
+          border-left: 3px solid #10b981;
+        }
+        .tip-node {
+          border-left: 3px solid #f59e0b;
+        }
+        .node-title {
+          font-weight: 600;
+          color: #111827;
+          margin-bottom: 4px;
+          font-size: 13px;
+        }
+        .node-description, .node-content {
+          color: #374151;
+          font-size: 12px;
+          line-height: 1.4;
+        }
+        .mindmap-note {
+          text-align: center;
+          color: #6b7280;
+          font-style: italic;
+          padding: 20px;
+        }
+        .mindmap-text-content {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          padding: 15px;
+          margin-top: 15px;
+          text-align: left;
+          font-style: normal;
+          color: #374151;
+          white-space: pre-line;
+        }
         @media print {
           body { margin: 0; }
           .header { page-break-after: avoid; }
@@ -508,6 +772,13 @@ export const generatePDFContent = ({ note }: PDFGeneratorProps): string => {
         </div>
       ` : ''}
       
+      ${note.explanation ? `
+        <div class="content-section">
+          <div class="section-title">🗺️ Knowledge Mind Map</div>
+          <div class="summary-content">${formatMindMap(note.explanation)}</div>
+        </div>
+      ` : ''}
+      
       ${note.quiz && note.quiz.MCQ && note.quiz.MCQ.length > 0 ? `
         <div class="content-section">
           <div class="section-title">🧠 Study Quiz</div>
@@ -521,7 +792,7 @@ export const generatePDFContent = ({ note }: PDFGeneratorProps): string => {
   return htmlContent;
 };
 
-export const downloadPDF = async (note: Note): Promise<void> => {
+export const downloadPDF = async (note: Note, mindMapSVG?: string): Promise<void> => {
   try {
     // Create a new window for PDF generation
     const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
@@ -530,7 +801,7 @@ export const downloadPDF = async (note: Note): Promise<void> => {
       return;
     }
 
-    const htmlContent = generatePDFContent({ note });
+    const htmlContent = generatePDFContent({ note, mindMapSVG });
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();

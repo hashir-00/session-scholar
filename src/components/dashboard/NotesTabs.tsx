@@ -7,8 +7,8 @@ import { Note } from '@/api/noteService';
 import { EmptyTabState } from './EmptyTabState';
 import { ProcessingNotesGrid } from './ProcessingNotesGrid';
 import { CompletedNotesGrid } from './CompletedNotesGrid';
-import { mockExplanations } from '@/data/mockExplanations';
-import { ExplanationGrid } from './ExplanationGrid';
+import { AdditionalContentGrid } from './AdditionalContentGrid';
+import { useAdditionalContent } from '@/hooks/useAdditionalContent';
 
 interface NotesTabsProps {
   processingNotes: Note[];
@@ -23,6 +23,7 @@ export const NotesTabs: React.FC<NotesTabsProps> = ({
 }) => {
   // Simple state for manual tab switching only
   const [activeTab, setActiveTab] = useState<string>("processing");
+  const { additionalContent } = useAdditionalContent();
   
   return (
     <motion.div 
@@ -63,9 +64,11 @@ export const NotesTabs: React.FC<NotesTabsProps> = ({
           >
             <MessageSquare className="h-4 w-4" />
             Additional Contents
-            <Badge variant="secondary" className="bg-orange-100 text-orange-800 ml-1">
-              {mockExplanations.length}
-            </Badge>
+            {additionalContent.length > 0 && (
+              <Badge variant="secondary" className="bg-orange-100 text-orange-800 ml-1">
+                {additionalContent.length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -96,7 +99,7 @@ export const NotesTabs: React.FC<NotesTabsProps> = ({
         </TabsContent>
 
         <TabsContent value="explanations" className="space-y-6">
-          <ExplanationGrid />
+          <AdditionalContentGrid />
         </TabsContent>
       </Tabs>
     </motion.div>

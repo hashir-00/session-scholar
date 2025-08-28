@@ -6,10 +6,10 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import Stepper from '@/components/ui/stepper';
 import { Upload, FileImage, X, Brain, CheckCircle2, Sparkles, FileText, Wand2, AlertCircle } from 'lucide-react';
-import { useNotes } from '@/context/NoteContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { config } from '@/config';
+import { useNotes } from '@/context/NoteContext';
 
 interface NoteUploaderProps {
   onClose?: () => void;

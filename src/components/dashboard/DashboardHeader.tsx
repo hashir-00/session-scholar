@@ -38,19 +38,14 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           >
             <button 
               onClick={() => navigate('/')}
-              className="flex items-center gap-4 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
               <div className="h-12 w-12 rounded-2xl bg-gradient-to-r from-amber-700 via-orange-600 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-200/50">
                 <Brain className="h-7 w-7 text-white" />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent">
-                  {config.app.title}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {config.app.description}
-                </p>
-              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                StudyAI
+              </h1>
             </button>
             <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 border-amber-300/30">
               <Sparkles className="h-3 w-3 mr-1" />

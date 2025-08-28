@@ -99,7 +99,11 @@ export class MockNoteService {
         
         setTimeout(() => {
           const success = this.updateNote(noteId, {
-            quiz: [...mockQuizQuestions],
+            quiz: {
+              MCQ: [...mockQuizQuestions],
+              QuickQA: [],
+              Flashcards: []
+            },
           });
           
           if (success) {

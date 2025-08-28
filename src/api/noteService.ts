@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { config } from '@/config';
 import { MockNoteService, mockTiming, simulateApiDelay, generateMockExplanation } from '@/mocks';
+import { getMockAdditionalContent, getMockAdditionalContentById, MockAdditionalContent, generateMockAdditionalContentFromNotes } from '@/mocks/mockAdditionalContent';
 
 const API_BASE_URL = config.api.baseUrl;
 
@@ -315,6 +316,60 @@ class NoteService {
     } catch (error) {
       console.error('Failed to generate explanation:', error);
       console.error('Error details:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  async getAdditionalContent(filters?: {
+    subject?: string;
+    difficulty?: string;
+    limit?: number;
+  }, noteSummaries?: Array<{id: string, summary: string}>): Promise<MockAdditionalContent[]> {
+    if (MOCK_MODE) {
+      // Simulate network delay for mock mode
+      await simulateApiDelay(mockTiming.api.getNotes);
+      
+      // If note summaries are provided, generate content based on them
+      if (noteSummaries && noteSummaries.length > 0) {
+        return generateMockAdditionalContentFromNotes(noteSummaries, filters?.limit || 6);
+      }
+      
+      // If no note summaries and no explicit request for general content, return empty array
+      // This ensures the component starts empty until user actively generates content
+      return [];
+    }
+
+    // Real backend mode - make API call to generate additional content based on note summaries
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/generate-additional-content/`, {
+        noteSummaries: noteSummaries || [],
+        filters: filters || {}
+      });
+      
+      // Transform backend response to frontend format if needed
+      return response.data as MockAdditionalContent[];
+    } catch (error) {
+      console.error('Failed to generate additional content:', error);
+      throw error;
+    }
+  }
+
+  async getAdditionalContentById(id: string): Promise<MockAdditionalContent | null> {
+    if (MOCK_MODE) {
+      // Simulate network delay for mock mode
+      await simulateApiDelay(mockTiming.api.getNote);
+      
+      // Return mock data by ID
+      return getMockAdditionalContentById(id);
+    }
+
+    // Real backend mode - make API call to fetch specific additional content
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/additional-content/${id}`);
+      
+      return response.data as MockAdditionalContent;
+    } catch (error) {
+      console.error(`Failed to fetch additional content with ID ${id}:`, error);
       throw error;
     }
   }

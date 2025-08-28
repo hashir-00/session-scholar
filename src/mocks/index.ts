@@ -7,3 +7,4 @@ export * from './mockData';
 export * from './mockService';
 export * from './mockTiming';
 export * from './mockUtils';
+export * from './mockAdditionalContent';
